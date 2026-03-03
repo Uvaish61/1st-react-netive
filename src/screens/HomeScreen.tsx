@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,9 @@ import {
   FlatList,
 } from 'react-native';
 import { Todo } from '../types/todo.types';
+import { saveTodo, loadTodos } from '../storage/todo.storage';
+import { TouchableNativeFeedback } from 'react-native/types_generated/index';
+
 
 const HomeScreen: React.FC = () => {
 
@@ -16,24 +19,63 @@ const HomeScreen: React.FC = () => {
 
   // State to store todo list
   const [todos, setTodos] = useState<Todo[]>([]);
+  //Load todos from AsyncStorage on app start
+  useEffect(() => {
+    const fetchTodos = async () => {
+      const localTodos = await loadTodos();
+      console.log("local todos:", localTodos);
+      const validTodos = Array.isArray(localTodos)
+        ? localTodos.map((todo) => ({
+          ...todo,
+          completed:
+            typeof todo.completed === 'boolean'
+              ? todo.completed
+              : false, // Default for old stored todos
+        }))
+        : [];
+
+      setTodos(validTodos); // MODIFIED: use validated data
+    };
+
+    fetchTodos();
+  }, []);
 
   // Add new todo
-  const addTodo = () => {
+  const addTodo = async () => {
     if (input.trim() === '') return;
 
     const newTodo: Todo = {
       id: Date.now().toString(),
       title: input,
+      completed: false
     };
 
-    setTodos(prev => [newTodo, ...prev]);
+    const updatedTodos = [...todos, newTodo];
+    setTodos(updatedTodos);
+
+    console.log("todos:", updatedTodos);
+    await saveTodo(updatedTodos);
     setInput('');
   };
 
   // Delete todo
-  const deleteTodo = (id: string) => {
-    setTodos(prev => prev.filter(todo => todo.id !== id));
+  const deleteTodo = async (id: string) => {
+    const updatedTodos = todos.filter(todo => todo.id !== id);
+    setTodos(updatedTodos);
+    await saveTodo(updatedTodos);
   };
+  const toggleComplete = async (id: string) => {
+    const updatedTodos = todos.map((todo) =>
+      todo.id === id
+        ? { ...todo, completed: !todo.completed }
+        : todo
+    );
+
+    setTodos(updatedTodos);
+    await saveTodo(updatedTodos);
+  };
+
+
 
   return (
     <View style={styles.container}> {/* FIXED: style → styles */}
@@ -58,13 +100,43 @@ const HomeScreen: React.FC = () => {
       <FlatList
         data={todos}
         keyExtractor={item => item.id}
+        ListEmptyComponent={() => (
+          <Text style={styles.emptyText}>
+            No task yet. Add one
+          </Text>
+        )}
         renderItem={({ item }) => (
-          <View style={styles.todoItem}> {/* FIXED */}
-            <Text style={styles.todoText}>{item.title}</Text>
+          <View style={styles.todoItem}>
+
+            {/* 🔥 ADDED: Tick rendering inside checkbox */}
+            <TouchableOpacity
+              style={[
+                styles.checkbox,
+                item.completed && styles.checkboxChecked
+              ]}
+              onPress={() => toggleComplete(item.id)}
+            >
+              {item.completed && (
+                <Text style={styles.tick}>✓</Text>  {/* 🔥 ADDED */}
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.todoContent}>
+              {/* 🔥 ADDED: Conditional styling for completed task */}
+              <Text
+                style={[
+                  styles.todoText,
+                  item.completed && styles.completedText  // 🔥 ADDED
+                ]}
+              >
+                {item?.title || "Untitled Task"}
+              </Text>
+            </View>
 
             <TouchableOpacity onPress={() => deleteTodo(item.id)}>
               <Text style={styles.deleteText}>Delete</Text>
             </TouchableOpacity>
+
           </View>
         )}
       />
@@ -72,6 +144,7 @@ const HomeScreen: React.FC = () => {
     </View>
   );
 };
+
 
 export default HomeScreen;
 
@@ -111,19 +184,56 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
+
+
   todoItem: {
     backgroundColor: '#FFFFFF',
     padding: 15,
     borderRadius: 8,
     marginBottom: 10,
     flexDirection: 'row',
+    alignItems: 'center'
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+  borderRadius: 6,
+    marginRight: 12,
+    borderRadius: 6,
+    marginRight: 12,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#4CAF50',
+  },
+  TouchableNativeFeedback: {
+    color:'#FFFFFF',
+    fontWeight: 'bold',
+  },
+  todoContent: {
+    flex: 1,
+    flexDirection: 'row',
     justifyContent: 'space-between',
   },
   todoText: {
     fontSize: 16,
   },
+
+  completedText: {
+    textDecorationLine: 'line-through',
+  },
   deleteText: {
     color: '#FF5252',
     fontWeight: 'bold',
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 40,
+    color: '#999',
+    fontSize: 16,
   },
 });

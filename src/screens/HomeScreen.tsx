@@ -407,4 +407,3 @@ const styles = StyleSheet.create({
     color: '#22c55e',
   },
 });
-//6th

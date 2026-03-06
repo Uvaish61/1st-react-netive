@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 
 import {
@@ -50,8 +49,9 @@ const HomeScreen: React.FC = () => {
 
             dueDate: todo.dueDate || null,
             dueTime: todo.dueTime || null,
-// 🔧 FIXED: cast status to allowed Todo type
-status: (todo.status as "pending" | "completed" | "overdue") || "pending",
+            // 🔧 FIXED: cast status to allowed Todo type
+            status:
+              (todo.status as 'pending' | 'completed' | 'overdue') || 'pending',
             // 🔧 FIXED: prevents crash for old stored todos
             completedAt: todo.completedAt || null,
           }))
@@ -75,7 +75,7 @@ status: (todo.status as "pending" | "completed" | "overdue") || "pending",
       completed: false,
 
       // 🔧 FIXED: store selected deadline instead of null
-  dueDate: dueDate ? dueDate.toISOString() : null,
+      dueDate: dueDate ? dueDate.toISOString() : null,
       // 🔧 FIXED: store selected time
       dueTime: dueTime ? dueTime.toISOString() : null,
 
@@ -108,55 +108,51 @@ status: (todo.status as "pending" | "completed" | "overdue") || "pending",
 
   // TOGGLE TASK COMPLETION
   const toggleComplete = async (id: string) => {
-    const updatedTodos = todos.map(todo =>{
+    const updatedTodos = todos.map(todo => {
       if (todo.id === id) {
-        const now = new Date()
-        let completionType: "early" | "ontime" | "late" | undefined
+        const now = new Date();
+        let completionType: 'early' | 'ontime' | 'late' | undefined;
 
-        if(todo.dueDate && todo.dueTime)
-        {
-          const due = new Date(todo.dueDate)
-          const time= new Date(todo.dueTime!)
+        if (todo.dueDate && todo.dueTime) {
+          const due = new Date(todo.dueDate);
+          const time = new Date(todo.dueTime!);
 
-          due.setHours(time.getHours())
-          due.setMinutes(time.getMinutes())
-          
-          if (now < due) completionType = "early"
-          else if (now.getTime() === due.getTime()) completionType = "ontime"
-          else completionType = "late"
+          due.setHours(time.getHours());
+          due.setMinutes(time.getMinutes());
+
+          if (now < due) completionType = 'early';
+          else if (now.getTime() === due.getTime()) completionType = 'ontime';
+          else completionType = 'late';
         }
-        return{
+        return {
           ...todo,
           completed: !todo.completed,
-         status: !todo.completed ? "completed" : "pending",
-         completedAt: !todo.completed ? now.toISOString() : null,
-         completionType: !todo.completed ? completionType : undefined
-
-        }
-        
+          status: !todo.completed ? 'completed' : 'pending',
+          completedAt: !todo.completed ? now.toISOString() : null,
+          completionType: !todo.completed ? completionType : undefined,
+        };
       }
-      return todo
-
-    })
-    setTodos(updatedTodos)
-    await saveTodo(updatedTodos)
-  }
+      return todo;
+    });
+    setTodos(updatedTodos);
+    await saveTodo(updatedTodos);
+  };
 
   const onChangeDate = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false)
+    setShowDatePicker(false);
 
     if (selectedDate) {
-      setDueDate(selectedDate)
+      setDueDate(selectedDate);
     }
-  }
+  };
 
   const onChangeTime = (event: any, selectedTime?: Date) => {
-    setShowTimePicker(false)
+    setShowTimePicker(false);
 
     if (selectedTime) {
-      setDueTime(selectedTime)
+      setDueTime(selectedTime);
     }
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -177,8 +173,7 @@ status: (todo.status as "pending" | "completed" | "overdue") || "pending",
       </View>
 
       {/* ➕ ADDED: date & time selector UI */}
-<View style={{ flexDirection: 'row', marginBottom: 15 }}>
-
+      <View style={{ flexDirection: 'row', marginBottom: 15 }}>
         <TouchableOpacity
           style={styles.dateButton}
           onPress={() => setShowDatePicker(true)}
@@ -192,7 +187,6 @@ status: (todo.status as "pending" | "completed" | "overdue") || "pending",
         >
           <Text>Select Time</Text>
         </TouchableOpacity>
-
       </View>
 
       {/* ➕ ADDED: DATE PICKER */}
@@ -255,19 +249,18 @@ status: (todo.status as "pending" | "completed" | "overdue") || "pending",
 
               <View style={styles.statusContainer}>
                 <Text
-                 style={[
-                  styles.statusText,
-                  item.status === "pending" && styles.pendingStatus,
-                  item.status ==="completed" && styles.completedStatus,
-                  item.status === "overdue" && styles.overdueStatus,
-                 ]}
-                 >
+                  style={[
+                    styles.statusText,
+                    item.status === 'pending' && styles.pendingStatus,
+                    item.status === 'completed' && styles.completedStatus,
+                    item.status === 'overdue' && styles.overdueStatus,
+                  ]}
+                >
                   Status: {item.status}
-                 </Text>
-                 {item.dueDate && item.dueTime && (
-
+                </Text>
+                {item.dueDate && item.dueTime && (
                   <Text style={styles.deadlineText}>
-                    Due: {new Date(item.dueDate!).toLocaleDateString()} •{" "}
+                    Due: {new Date(item.dueDate!).toLocaleDateString()} •{' '}
                     {new Date(item.dueTime!).toLocaleTimeString()}
                   </Text>
                 )}
@@ -277,26 +270,26 @@ status: (todo.status as "pending" | "completed" | "overdue") || "pending",
                     Completed: {new Date(item.completedAt).toLocaleString()}
                   </Text>
                 )}
-                {item.completionType === "early" && (
-                  <Text style= {{ color: "#22c55e", fontSize: 12}}>
+                {item.completionType === 'early' && (
+                  <Text style={{ color: '#22c55e', fontSize: 12 }}>
                     Completed Early
-                    </Text>
+                  </Text>
                 )}
-                {item.completionType === "ontime" && (
-                  <Text style={{  color: "#3b82f6", fontSize: 12}}>
+                {item.completionType === 'ontime' && (
+                  <Text style={{ color: '#3b82f6', fontSize: 12 }}>
                     Completed On Time
-
-                    </Text>
+                  </Text>
                 )}
-                {item.completionType === "late" && (
-                  <Text style={{ color: "#ef4444", fontSize: 12}}>
+                {item.completionType === 'late' && (
+                  <Text style={{ color: '#ef4444', fontSize: 12 }}>
                     Completed Late
-                    </Text>
+                  </Text>
                 )}
-              <TouchableOpacity onPress={() => deleteTodo(item.id)}>
+              </View>
+            </View>
+            <TouchableOpacity onPress={() => deleteTodo(item.id)}>
               <Text style={styles.deleteText}>Delete</Text>
             </TouchableOpacity>
-
           </View>
         )}
       />
@@ -440,16 +433,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#22c55e',
   },
-   pendingStatus: {
-    color: "#f59e0b",
-    fontWeight: "600"
+  pendingStatus: {
+    color: '#f59e0b',
+    fontWeight: '600',
   },
   completedStatus: {
-    color: "#22c55e",
-    fontWeight: "600"
+    color: '#22c55e',
+    fontWeight: '600',
   },
   overdueStatus: {
-    color: "#ef4444",
-    fontWeight: "600"
-  }
+    color: '#ef4444',
+    fontWeight: '600',
+  },
 });

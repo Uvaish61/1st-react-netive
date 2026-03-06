@@ -24,7 +24,7 @@ const HomeScreen: React.FC = () => {
   // STATE: todo list
   const [todos, setTodos] = useState<Todo[]>([]);
 
-  // ➕ ADDED: store selected date
+  // ADDED: store selected date
   const [dueDate, setDueDate] = useState<Date | null>(null);
 
   // 🔧 FIXED: typo setDuteTime → setDueTime
@@ -33,7 +33,7 @@ const HomeScreen: React.FC = () => {
   // 🔧 FIXED: state name should start lowercase
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // ➕ ADDED: separate time picker
+  //  ADDED: separate time picker
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   // Load todos from AsyncStorage when app starts

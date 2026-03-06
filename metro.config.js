@@ -1,11 +1,36 @@
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
+const { withNativeWind } = require('nativewind/metro');
+const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');
+const path = require('path');
 
-/**
- * Metro configuration
- * https://reactnative.dev/docs/metro
- *
- * @type {import('@react-native/metro-config').MetroConfig}
- */
-const config = {};
+// Get base config
+const baseConfig = getDefaultConfig(path.resolve(__dirname));
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+// Customize asset extensions and resolver
+const customConfig = {
+  resolver: {
+    assetExts: [
+      'png', 'jpg', 'jpeg', 'svg', 'gif',
+      'webp', 'ttf', 'otf',
+    ],
+    sourceExts: ['js', 'json', 'ts', 'tsx', 'jsx'],
+  },
+  transformer: {
+    getTransformOptions: async () => ({
+      transform: {
+        experimentalImportSupport: false,
+        inlineRequires: true,
+      },
+    }),
+  },
+};
+
+// Merge base config with custom changes
+const mergedConfig = mergeConfig(baseConfig, customConfig);
+
+// Wrap with NativeWind and Reanimated support
+const finalConfig = wrapWithReanimatedMetroConfig(
+  withNativeWind(mergedConfig, { input: './global.css' })
+);
+
+module.exports = finalConfig;

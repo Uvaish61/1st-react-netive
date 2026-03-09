@@ -9,7 +9,7 @@ const AuthLanding = () => {
         Organize your tasks and stay productive
       </Text>
       {/* App Title */}
-      <TouchableOpacity className="w-full bg-black py-4 rounded-x1 mb-4 flex-row items-center justify-center">
+      <TouchableOpacity className="w-full bg-black py-4 rounded-xl mb-4 flex-row items-center justify-center">
         <Icon name="log-in-outline" size={20} color="white" />
         <Text className="text-white text-lg font-semibold ml-2">Login</Text>
       </TouchableOpacity>

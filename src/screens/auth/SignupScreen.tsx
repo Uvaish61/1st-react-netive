@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { Color } from "react-native/types_generated/Libraries/Animated/AnimatedExports";
 
 const SignScreen = () => {
 
@@ -16,8 +17,8 @@ const SignScreen = () => {
       </Text>
 
       {/* Name Input */}
-      <View className="flex-row items-center border border-gray-300 rounded-lg px-3 mb-4">
-        <Icon name="person-outline" size={20} color="gray" />
+      <View className="flex-row items-center border border-black rounded-lg px-3 mb-4">
+        <Icon name="person-outline" size={20} color="black" />
         <TextInput
           placeholder="Full Name"
           value={name}
@@ -27,8 +28,8 @@ const SignScreen = () => {
       </View>
 
       {/* Email Input */}
-      <View className="flex-row items-center border border-gray-300 rounded-lg px-3 mb-4">
-        <Icon name="mail-outline" size={20} color="gray" />
+      <View className="flex-row items-center border border-black rounded-lg px-3 mb-4">
+        <Icon name="mail-outline" size={20} color="black" />
         <TextInput
           placeholder="Email"
           value={email}
@@ -38,14 +39,14 @@ const SignScreen = () => {
       </View>
 
       {/* Password Input */}
-      <View className="flex-row items-center border border-gray-300 rounded-lg px-3 mb-6">
-        <Icon name="lock-closed-outline" size={20} color="gray" />
+      <View className="flex-row items-center border border-black rounded-lg px-3 mb-6">
+        <Icon name="lock-closed-outline" size={20} color="black" />
         <TextInput
           placeholder="Password"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
-          className="flex-1 ml-2 py-3"
+          className="flex-1 ml-2 py-3 text-black"
         />
       </View>
 

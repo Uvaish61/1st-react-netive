@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import { Color } from "react-native/types_generated/Libraries/Animated/AnimatedExports";
 
 const SignScreen = () => {
 
@@ -47,6 +46,7 @@ const SignScreen = () => {
           value={password}
           onChangeText={setPassword}
           className="flex-1 ml-2 py-3 text-black"
+          //hello 
         />
       </View>
 

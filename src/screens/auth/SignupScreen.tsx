@@ -1,12 +1,28 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import  AsyncStorage from "@react-native-async-storage/async-storage";
 
-const SignScreen = () => {
+const SignScreen = ({ navigation } : any) => {
+
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const handleSignup = async () => {
+
+  const user = {
+    name: name,
+    email: email,
+    password: password,
+  };
+
+  await AsyncStorage.setItem("userAccount", JSON.stringify(user));
+  await AsyncStorage.setItem("isLoggedIn", "true");
+
+  navigation.replace("Home");
+
+};
 
   return (
     <View className="flex-1 bg-white px-6 justify-center">
@@ -42,6 +58,7 @@ const SignScreen = () => {
         <Icon name="lock-closed-outline" size={20} color="black" />
         <TextInput
           placeholder="Password"
+          placeholderTextColor="gray"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
@@ -51,7 +68,9 @@ const SignScreen = () => {
       </View>
 
       {/* Create Account Button */}
-      <TouchableOpacity className="bg-black py-4 rounded-xl items-center">
+      <TouchableOpacity
+      onPress={handleSignup}
+      className="bg-black py-4 rounded-xl items-center">
         <Text className="text-white text-lg font-semibold">
           Create Account
         </Text>

@@ -14,8 +14,8 @@ return (
 Login
 </Text>
 
-<View className="flex-row items-center border border-gray-300 rounded-lg px-3 mb-4">
-<Icon name="mail-outline" size={20} color="gray" />
+<View className="flex-row items-center border border-black rounded-lg px-3 mb-4">
+<Icon name="mail-outline" size={20} color="black" />
 <TextInput
 placeholder="Email"
 value={email}
@@ -24,8 +24,8 @@ className="flex-1 ml-2 py-3 text-black"
 />
 </View>
 
-<View className="flex-row items-center border border-gray-300 rounded-lg px-3 mb-6">
-<Icon name="lock-closed-outline" size={20} color="gray" />
+<View className="flex-row items-center border border-black rounded-lg px-3 mb-6">
+<Icon name="lock-closed-outline" size={20} color="black" />
 <TextInput
 placeholder="Password"
 secureTextEntry

@@ -16,7 +16,7 @@ const LoginScreen = ({ navigation }: any) => {
             return;
         }
     };
-
+//hey 
     return (
         <View className="flex-1 bg-white px-6 justify-center">
 

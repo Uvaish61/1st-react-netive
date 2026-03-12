@@ -19,7 +19,7 @@ const SplashScreen = ({ navigation }: any) => {
             navigation.replace("Login");
         }
     }, 1500);
- };
+ }
  checkAuth();
     }, []);
     return (

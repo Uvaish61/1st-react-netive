@@ -61,4 +61,3 @@ const LoginScreen = ({ navigation }: any) => {
 
 
 export default LoginScreen;
-//no commit

@@ -16,7 +16,7 @@ const LoginScreen = ({ navigation }: any) => {
             return;
         }
     };
-//hey 
+
     return (
         <View className="flex-1 bg-white px-6 justify-center">
 
@@ -61,4 +61,3 @@ const LoginScreen = ({ navigation }: any) => {
 
 
 export default LoginScreen;
-//hey i am adding somthing 

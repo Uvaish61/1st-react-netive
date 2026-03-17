@@ -106,7 +106,7 @@ const HomeScreen: React.FC = () => {
     await saveTodo(updatedTodos);
   };
 
-  // TOGGLE TASK COMPLETION
+  // TOGGLE TASK COMPLETION 
   const toggleComplete = async (id: string) => {
     const updatedTodos = todos.map(todo => {
       if (todo.id === id) {

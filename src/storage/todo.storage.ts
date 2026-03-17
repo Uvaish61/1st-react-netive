@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Todo } from '../types/todo.types';
 
 const STORAGE_KEY = 'TODOS-STORAGE';
-// Save todos to device
+// Save todos to device  
 export const saveTodo = async (todos: Todo[]) => {
     try {
         const jsonValue = JSON.stringify(todos);

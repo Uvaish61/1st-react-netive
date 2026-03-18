@@ -200,7 +200,7 @@ const HomeScreen: React.FC = () => {
         />
       )}
 
-      {/* ➕ ADDED: TIME PICKER */}
+      {/*  ADDED: TIME PICKER */}
 
       {showTimePicker && (
         <DateTimePicker

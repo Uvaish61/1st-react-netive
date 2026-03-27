@@ -1,21 +1,47 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LoginScreen = ({ navigation }: any) => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const handleLogin = async () => {
-        const storedUser = await AsyncStorage.getItem("userAccount");
-        if (!storedUser) {
-            Alert.alert(
-                "Account Not Found",
-                "You have not created an account . Please create the account fisrt. "
-            );
+    if (!email || !password) {
+        Alert.alert("Missing Fields", "Please enter email and password");
+        return;
+    }
+
+    try {
+        
+        const response = await fetch("http://10.0.2.2:5000/api/auth/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                email,
+                password,
+            }),
+        });
+
+        const data = await response.json();
+        const token = data?.token;
+if (!token) {
+Alert.alert("Login Failed", "Token not received from server");
+return;
+}
+
+        if (!response.ok) {
+            Alert.alert("Login Failed", data?.message || "Invalid credentials");
             return;
         }
-    };
+
+        Alert.alert("Success", "Login successful");
+        navigation.replace("Home",{token});
+    } catch (error) {
+        Alert.alert("Network Error", "Could not connect to server");
+    }
+};
 
     return (
         <View className="flex-1 bg-white px-6 justify-center">

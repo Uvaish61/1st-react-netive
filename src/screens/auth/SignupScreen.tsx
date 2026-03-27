@@ -1,28 +1,43 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import  AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SignScreen = ({ navigation } : any) => {
 
 
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const handleSignup = async () => {
+  try {
+    const response = await fetch("http://10.0.2.2:5000/api/auth/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username,
+        email,
+        password,
+      }),
+    });
 
-  const user = {
-    name: name,
-    email: email,
-    password: password,
-  };
+    const data = await response.json();
 
-  await AsyncStorage.setItem("userAccount", JSON.stringify(user));
-  await AsyncStorage.setItem("isLoggedIn", "true");
+    if (!response.ok) {
+      Alert.alert("Signup Failed", data?.message || "Something went wrong");
+      return;
+    }
 
-  navigation.replace("Home");
-
+    Alert.alert("Success", "Account created successfully");
+    navigation.replace("Home");
+  } catch (error) {
+    Alert.alert("Network Error", "Could not connect to server");
+  }
 };
+  
+
 
   return (
     <View className="flex-1 bg-white px-6 justify-center">
@@ -35,9 +50,9 @@ const SignScreen = ({ navigation } : any) => {
       <View className="flex-row items-center border border-black rounded-lg px-3 mb-4">
         <Icon name="person-outline" size={20} color="black" />
         <TextInput
-          placeholder="Full Name"
-          value={name}
-          onChangeText={setName}
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
           className="flex-1 ml-2 py-3"
         />
       </View>

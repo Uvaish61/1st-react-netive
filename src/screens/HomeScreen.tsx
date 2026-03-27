@@ -15,7 +15,7 @@ import { Todo } from '../types/todo.types';
 //  ADDED: datetime picker import
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-// import { saveTodo, loadTodos } from '../storage/todo.storage';
+import { saveTodo, loadTodos } from '../storage/todo.storage';
 
 const HomeScreen: React.FC<any> = ({ route, navigation }) => {
     // STATE: task input

@@ -1,0 +1,71 @@
+{
+  "users": [
+    {
+      "id": "user-1774619397076-0254y9kw",
+      "username": "owais",
+      "email": "owais@example.com",
+      "passwordHash": "$2a$10$lmAZISoZNYtJngnawfZgOeF8yDQ5Fd7awTIIuhxi5ONuRBZNVPJAW",
+      "createdAt": "2026-03-27T13:49:57.075Z",
+      "updatedAt": "2026-03-27T13:49:57.075Z"
+    },
+    {
+      "id": "user-1774622140458-q062iveh",
+      "username": "Owais khan",
+      "email": "uvaishkhanexml@gmail.com",
+      "passwordHash": "$2a$10$t60cIZ9I7GT6n0f.VaMQpO6T1kbGqBqnTMSzqmfZufiJjxX3WZBCi",
+      "createdAt": "2026-03-27T14:35:40.457Z",
+      "updatedAt": "2026-03-27T14:35:40.457Z"
+    },
+    {
+      "id": "user-1774622228196-esqrw23m",
+      "username": "uvaish",
+      "email": "uvasishexml@gmail.com",
+      "passwordHash": "$2a$10$OYd5bZ3OrTQlddZcImLvbu4yST85/6G.QfC409eoKod4Ep6kdrtlS",
+      "createdAt": "2026-03-27T14:37:08.196Z",
+      "updatedAt": "2026-03-27T14:37:08.196Z"
+    },
+    {
+      "id": "user-1774627608044-h01jkm57",
+      "username": "test",
+      "email": "test@mail.com",
+      "passwordHash": "$2a$10$yg8yiGz1A7l6fMdjohGCzuEYbIpdGnRBr1h/OljPL.PhqYE.a0APS",
+      "createdAt": "2026-03-27T16:06:48.043Z",
+      "updatedAt": "2026-03-27T16:06:48.043Z"
+    },
+    {
+      "id": "user-1774627793940-htkkhn6j",
+      "username": "uvaishh",
+      "email": "uvaishkhantest@gmail.com",
+      "passwordHash": "$2a$10$uW9vxffr9ACyHkS58fxn1eYt3aIKSh2MIfXt6nO0l2a//xjC.711.",
+      "createdAt": "2026-03-27T16:09:53.940Z",
+      "updatedAt": "2026-03-27T16:09:53.940Z"
+    },
+    {
+      "id": "user-1774627887813-fshx2xow",
+      "username": "rk",
+      "email": "rktest@gmail.com",
+      "passwordHash": "$2a$10$Gb3JPcwFdAHc/ILNpbVTaO39rGxWKyAckIjcsH5XurM81o9ogxZKO",
+      "createdAt": "2026-03-27T16:11:27.813Z",
+      "updatedAt": "2026-03-27T16:11:27.813Z"
+    },
+    {
+      "id": "user-1774628448689-wjhfko8z",
+      "username": "Uvaish khann",
+      "email": "uvaishworktest@gmail.com",
+      "passwordHash": "$2a$10$dKJmIlIhkJ0ooPUmonox.esO9AO8efnG4UhdE6UcsYvMSWm/j3Rc.",
+      "createdAt": "2026-03-27T16:20:48.689Z",
+      "updatedAt": "2026-03-27T16:20:48.689Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-1774633047081-cw1s2nxv",
+      "title": "Finish API",
+      "description": "Write docs",
+      "completed": false,
+      "userId": "user-1774619397076-0254y9kw",
+      "createdAt": "2026-03-27T17:37:27.079Z",
+      "updatedAt": "2026-03-27T17:37:27.079Z"
+    }
+  ]
+}

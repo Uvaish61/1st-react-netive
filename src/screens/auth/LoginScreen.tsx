@@ -25,13 +25,13 @@ const LoginScreen = ({ navigation }: any) => {
         });
 
         const data = await response.json();
-        const token = data?.token;
-if (!token) {
+        
+if (!response.ok) {
 Alert.alert("Login Failed", "Token not received from server");
 return;
 }
-
-        if (!response.ok) {
+const token = data?.token;
+        if (!token) {
             Alert.alert("Login Failed", data?.message || "Invalid credentials");
             return;
         }

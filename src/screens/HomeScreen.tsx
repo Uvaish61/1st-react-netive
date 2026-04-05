@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
+  Animated,
 } from 'react-native';
 
 import { Todo } from '../types/todo.types';
@@ -16,7 +17,7 @@ import { saveTodo, loadTodos } from '../storage/todo.storage';
 const HomeScreen: React.FC<any> = () => {
 
   const [input, setInput] = useState('');
-  const [todos, setTodos] = useState<Todo[]>([]);
+  const [todos, setTodos] = useState<Todo[]>([];
 
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [dueTime, setDueTime] = useState<Date | null>(null);
@@ -28,8 +29,17 @@ const HomeScreen: React.FC<any> = () => {
   const [filter, setFilter] = useState<'all' | 'completed' | 'pending'>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // 🌙 DARK MODE STATE
   const [darkMode, setDarkMode] = useState(false);
+
+  // 🎬 Animation map
+  const animations = useRef<{ [key: string]: Animated.Value }>({}).current;
+
+  const getAnimation = (id: string) => {
+    if (!animations[id]) {
+      animations[id] = new Animated.Value(1);
+    }
+    return animations[id];
+  };
 
   // LOAD TODOS
   useEffect(() => {
@@ -125,7 +135,23 @@ const HomeScreen: React.FC<any> = () => {
     ]);
   };
 
+  // 🎬 TOGGLE WITH ANIMATION
   const toggleComplete = async (id: string) => {
+    const anim = getAnimation(id);
+
+    Animated.sequence([
+      Animated.timing(anim, {
+        toValue: 0.8,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+      Animated.spring(anim, {
+        toValue: 1,
+        friction: 3,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     const updatedTodos = todos.map(todo => {
       if (todo.id === id) {
         const now = new Date();
@@ -163,7 +189,6 @@ const HomeScreen: React.FC<any> = () => {
       return true;
     });
 
-  // 🎨 THEME COLORS
   const theme = darkMode
     ? {
         bg: '#121212',
@@ -183,7 +208,6 @@ const HomeScreen: React.FC<any> = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
 
-      {/* 🌙 TOGGLE BUTTON */}
       <TouchableOpacity
         style={{ alignSelf: 'flex-end', marginBottom: 10 }}
         onPress={() => setDarkMode(!darkMode)}
@@ -198,7 +222,7 @@ const HomeScreen: React.FC<any> = () => {
       <View style={styles.inputContainer}>
         <TextInput
           style={[styles.input, { backgroundColor: theme.input, color: theme.text }]}
-          placeholder="Add new task..."
+          placeholder="Add task..."
           placeholderTextColor={theme.subText}
           value={input}
           onChangeText={setInput}
@@ -211,82 +235,43 @@ const HomeScreen: React.FC<any> = () => {
         </TouchableOpacity>
       </View>
 
-      {/* SEARCH */}
-      <TextInput
-        style={[styles.input, { backgroundColor: theme.input, color: theme.text }]}
-        placeholder="Search..."
-        placeholderTextColor={theme.subText}
-        value={search}
-        onChangeText={setSearch}
-      />
-
-      {/* FILTER */}
-      <View style={styles.filterContainer}>
-        {['all', 'completed', 'pending'].map(item => (
-          <TouchableOpacity key={item} onPress={() => setFilter(item as any)}>
-            <Text style={[
-              filter === item ? styles.activeFilter : styles.filterText,
-              { color: theme.text }
-            ]}>
-              {item}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* DATE TIME */}
-      <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-        <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
-          <Text>Select Date</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.dateButton} onPress={() => setShowTimePicker(true)}>
-          <Text>Select Time</Text>
-        </TouchableOpacity>
-      </View>
-
-      {dueDate && <Text style={{ color: theme.text }}>📅 {dueDate.toLocaleDateString()}</Text>}
-      {dueTime && <Text style={{ color: theme.text }}>⏰ {dueTime.toLocaleTimeString()}</Text>}
-
-      {showDatePicker && (
-        <DateTimePicker value={dueDate || new Date()} mode="date" onChange={onChangeDate} />
-      )}
-
-      {showTimePicker && (
-        <DateTimePicker value={dueTime || new Date()} mode="time" onChange={onChangeTime} />
-      )}
-
       <FlatList
         data={filteredTodos}
         keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.todoItem, { backgroundColor: theme.card }]}>
-            <TouchableOpacity
-              style={[styles.checkbox, item.completed && styles.checkboxChecked]}
-              onPress={() => toggleComplete(item.id)}
-            />
+        renderItem={({ item }) => {
+          const anim = getAnimation(item.id);
 
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: theme.text }}>
-                {item.title}
-              </Text>
-              <Text style={{ color: theme.subText }}>
-                Status: {item.status}
-              </Text>
-            </View>
+          return (
+            <Animated.View
+              style={[
+                styles.todoItem,
+                {
+                  backgroundColor: theme.card,
+                  transform: [{ scale: anim }],
+                  opacity: anim,
+                },
+              ]}
+            >
+              <TouchableOpacity
+                style={[styles.checkbox, item.completed && styles.checkboxChecked]}
+                onPress={() => toggleComplete(item.id)}
+              />
 
-            <TouchableOpacity onPress={() => {
-              setInput(item.title);
-              setEditingId(item.id);
-            }}>
-              <Text style={{ color: 'blue' }}>Edit</Text>
-            </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: theme.text }}>
+                  {item.title}
+                </Text>
+                <Text style={{ color: theme.subText }}>
+                  Status: {item.status}
+                </Text>
+              </View>
 
-            <TouchableOpacity onPress={() => confirmDelete(item.id)}>
-              <Text style={{ color: 'red' }}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+              <TouchableOpacity onPress={() => confirmDelete(item.id)}>
+                <Text style={{ color: 'red' }}>Delete</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          );
+        }}
       />
     </View>
   );
@@ -317,25 +302,8 @@ const styles = StyleSheet.create({
 
   addButtonText: { color: '#fff' },
 
-  filterContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 10,
-  },
-
-  filterText: {},
-
-  activeFilter: { fontWeight: 'bold' },
-
-  dateButton: {
-    backgroundColor: '#ddd',
-    padding: 10,
-    marginRight: 10,
-    borderRadius: 6,
-  },
-
   todoItem: {
-    padding: 10,
+    padding: 12,
     borderRadius: 8,
     marginBottom: 10,
     flexDirection: 'row',

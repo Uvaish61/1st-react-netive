@@ -13,11 +13,12 @@ import {
 import { Todo } from '../types/todo.types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { saveTodo, loadTodos } from '../storage/todo.storage';
+import { Swipeable } from 'react-native-gesture-handler';
 
 const HomeScreen: React.FC<any> = () => {
 
   const [input, setInput] = useState('');
-  const [todos, setTodos] = useState<Todo[]>([];
+  const [todos, setTodos] = useState<Todo[]>([]);
 
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [dueTime, setDueTime] = useState<Date | null>(null);
@@ -25,13 +26,8 @@ const HomeScreen: React.FC<any> = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'all' | 'completed' | 'pending'>('all');
-  const [editingId, setEditingId] = useState<string | null>(null);
-
   const [darkMode, setDarkMode] = useState(false);
 
-  // 🎬 Animation map
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;
 
   const getAnimation = (id: string) => {
@@ -63,65 +59,30 @@ const HomeScreen: React.FC<any> = () => {
     fetchTodos();
   }, []);
 
-  // AUTO OVERDUE
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-
-      const updatedTodos = todos.map(todo => {
-        if (!todo.completed && todo.dueDate && todo.dueTime) {
-          const due = new Date(todo.dueDate);
-          const time = new Date(todo.dueTime);
-
-          due.setHours(time.getHours());
-          due.setMinutes(time.getMinutes());
-
-          if (now > due) {
-            return { ...todo, status: 'overdue' };
-          }
-        }
-        return todo;
-      });
-
-      setTodos(updatedTodos);
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [todos]);
-
-  // ADD / EDIT
+  // ADD TODO
   const addTodo = async () => {
     if (input.trim() === '') return;
 
-    if (editingId) {
-      const updatedTodos = todos.map(todo =>
-        todo.id === editingId ? { ...todo, title: input } : todo
-      );
+    const newTodo: Todo = {
+      id: Date.now().toString(),
+      title: input,
+      completed: false,
+      dueDate: dueDate ? dueDate.toISOString() : null,
+      dueTime: dueTime ? dueTime.toISOString() : null,
+      status: 'pending',
+      completedAt: null,
+    };
 
-      setTodos(updatedTodos);
-      await saveTodo(updatedTodos);
-      setEditingId(null);
-    } else {
-      const newTodo: Todo = {
-        id: Date.now().toString(),
-        title: input,
-        completed: false,
-        dueDate: dueDate ? dueDate.toISOString() : null,
-        dueTime: dueTime ? dueTime.toISOString() : null,
-        status: 'pending',
-        completedAt: null,
-      };
-
-      const updatedTodos = [...todos, newTodo];
-      setTodos(updatedTodos);
-      await saveTodo(updatedTodos);
-    }
+    const updatedTodos = [...todos, newTodo];
+    setTodos(updatedTodos);
+    await saveTodo(updatedTodos);
 
     setInput('');
     setDueDate(null);
     setDueTime(null);
   };
 
+  // DELETE
   const deleteTodo = async (id: string) => {
     const updatedTodos = todos.filter(todo => todo.id !== id);
     setTodos(updatedTodos);
@@ -135,7 +96,7 @@ const HomeScreen: React.FC<any> = () => {
     ]);
   };
 
-  // 🎬 TOGGLE WITH ANIMATION
+  // ANIMATION + COMPLETE
   const toggleComplete = async (id: string) => {
     const anim = getAnimation(id);
 
@@ -169,26 +130,17 @@ const HomeScreen: React.FC<any> = () => {
     await saveTodo(updatedTodos);
   };
 
-  const onChangeDate = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (selectedDate) setDueDate(selectedDate);
-  };
+  // SWIPE ACTION
+  const renderRightActions = (id: string) => (
+    <TouchableOpacity
+      style={styles.deleteSwipe}
+      onPress={() => confirmDelete(id)}
+    >
+      <Text style={styles.deleteText}>Delete</Text>
+    </TouchableOpacity>
+  );
 
-  const onChangeTime = (event: any, selectedTime?: Date) => {
-    setShowTimePicker(false);
-    if (selectedTime) setDueTime(selectedTime);
-  };
-
-  const filteredTodos = todos
-    .filter(todo =>
-      todo.title.toLowerCase().includes(search.toLowerCase())
-    )
-    .filter(todo => {
-      if (filter === 'completed') return todo.completed;
-      if (filter === 'pending') return !todo.completed;
-      return true;
-    });
-
+  // THEME
   const theme = darkMode
     ? {
         bg: '#121212',
@@ -208,6 +160,7 @@ const HomeScreen: React.FC<any> = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
 
+      {/* DARK MODE */}
       <TouchableOpacity
         style={{ alignSelf: 'flex-end', marginBottom: 10 }}
         onPress={() => setDarkMode(!darkMode)}
@@ -219,6 +172,7 @@ const HomeScreen: React.FC<any> = () => {
 
       <Text style={[styles.title, { color: theme.text }]}>My Task</Text>
 
+      {/* INPUT */}
       <View style={styles.inputContainer}>
         <TextInput
           style={[styles.input, { backgroundColor: theme.input, color: theme.text }]}
@@ -229,47 +183,81 @@ const HomeScreen: React.FC<any> = () => {
         />
 
         <TouchableOpacity style={styles.addButton} onPress={addTodo}>
-          <Text style={styles.addButtonText}>
-            {editingId ? 'Update' : 'Add'}
-          </Text>
+          <Text style={styles.addButtonText}>Add</Text>
         </TouchableOpacity>
       </View>
 
+      {/* DATE + TIME */}
+      <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+        <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
+          <Text>Select Date</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.dateButton} onPress={() => setShowTimePicker(true)}>
+          <Text>Select Time</Text>
+        </TouchableOpacity>
+      </View>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={dueDate || new Date()}
+          mode="date"
+          onChange={(e, d) => {
+            setShowDatePicker(false);
+            if (d) setDueDate(d);
+          }}
+        />
+      )}
+
+      {showTimePicker && (
+        <DateTimePicker
+          value={dueTime || new Date()}
+          mode="time"
+          onChange={(e, t) => {
+            setShowTimePicker(false);
+            if (t) setDueTime(t);
+          }}
+        />
+      )}
+
+      {/* LIST */}
       <FlatList
-        data={filteredTodos}
+        data={todos}
         keyExtractor={item => item.id}
         renderItem={({ item }) => {
           const anim = getAnimation(item.id);
 
           return (
-            <Animated.View
-              style={[
-                styles.todoItem,
-                {
-                  backgroundColor: theme.card,
-                  transform: [{ scale: anim }],
-                  opacity: anim,
-                },
-              ]}
-            >
-              <TouchableOpacity
-                style={[styles.checkbox, item.completed && styles.checkboxChecked]}
-                onPress={() => toggleComplete(item.id)}
-              />
+            <Swipeable renderRightActions={() => renderRightActions(item.id)}>
+              <Animated.View
+                style={[
+                  styles.todoItem,
+                  {
+                    backgroundColor: theme.card,
+                    transform: [{ scale: anim }],
+                    opacity: anim,
+                  },
+                ]}
+              >
+                <TouchableOpacity
+                  style={[styles.checkbox, item.completed && styles.checkboxChecked]}
+                  onPress={() => toggleComplete(item.id)}
+                />
 
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: theme.text }}>
-                  {item.title}
-                </Text>
-                <Text style={{ color: theme.subText }}>
-                  Status: {item.status}
-                </Text>
-              </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: theme.text }}>
+                    {item.title}
+                  </Text>
+                  <Text style={{ color: theme.subText }}>
+                    Status: {item.status}
+                  </Text>
+                </View>
 
-              <TouchableOpacity onPress={() => confirmDelete(item.id)}>
-                <Text style={{ color: 'red' }}>Delete</Text>
-              </TouchableOpacity>
-            </Animated.View>
+                <TouchableOpacity onPress={() => confirmDelete(item.id)}>
+                  <Text style={{ color: 'red' }}>Delete</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </Swipeable>
           );
         }}
       />
@@ -290,7 +278,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10,
     borderRadius: 8,
-    marginBottom: 10,
   },
 
   addButton: {
@@ -301,6 +288,13 @@ const styles = StyleSheet.create({
   },
 
   addButtonText: { color: '#fff' },
+
+  dateButton: {
+    backgroundColor: '#ddd',
+    padding: 10,
+    marginRight: 10,
+    borderRadius: 6,
+  },
 
   todoItem: {
     padding: 12,
@@ -319,5 +313,19 @@ const styles = StyleSheet.create({
 
   checkboxChecked: {
     backgroundColor: '#4CAF50',
+  },
+
+  deleteSwipe: {
+    backgroundColor: '#ef4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+
+  deleteText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });

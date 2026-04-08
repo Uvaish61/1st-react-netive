@@ -6,6 +6,8 @@ export interface Todo {
     dueTime: string | null ;
     status: 'pending' | 'completed' | 'overdue';
     completedAt: string | null;
+    priority?: 'High' | 'Medium' | 'Low';
+    category?: 'Work' | 'Personal' | 'Study';
     completionType?: "early" | "ontime" | "late"
     }
     

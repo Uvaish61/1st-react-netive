@@ -17,6 +17,8 @@ import { saveTodo, loadTodos } from '../storage/todo.storage';
 import { Swipeable } from 'react-native-gesture-handler';
 
 type FilterType = 'all' | 'pending' | 'completed' | 'overdue';
+type PriorityType = 'High' | 'Medium' | 'Low';
+type CategoryType = 'Work' | 'Personal' | 'Study';
 
 const HomeScreen: React.FC<any> = () => {
 
@@ -25,6 +27,8 @@ const HomeScreen: React.FC<any> = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [priority, setPriority] = useState<PriorityType>('Medium');
+  const [category, setCategory] = useState<CategoryType>('Personal');
 
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [dueTime, setDueTime] = useState<Date | null>(null);
@@ -94,6 +98,8 @@ const HomeScreen: React.FC<any> = () => {
             dueTime: todo.dueTime || null,
             status: (todo.status as 'pending' | 'completed' | 'overdue') || 'pending',
             completedAt: todo.completedAt || null,
+            priority: (todo.priority as PriorityType) || 'Medium',
+            category: (todo.category as CategoryType) || 'Personal',
           }))
         : [];
 
@@ -115,6 +121,8 @@ const HomeScreen: React.FC<any> = () => {
               title: input.trim(),
               dueDate: dueDate ? dueDate.toISOString() : null,
               dueTime: dueTime ? dueTime.toISOString() : null,
+              priority,
+              category,
             }
           : todo,
       );
@@ -126,6 +134,8 @@ const HomeScreen: React.FC<any> = () => {
       setInput('');
       setDueDate(null);
       setDueTime(null);
+      setPriority('Medium');
+      setCategory('Personal');
       return;
     }
 
@@ -137,6 +147,8 @@ const HomeScreen: React.FC<any> = () => {
       dueTime: dueTime ? dueTime.toISOString() : null,
       status: 'pending',
       completedAt: null,
+      priority,
+      category,
     };
 
     const updatedTodos = [...todos, newTodo];
@@ -146,6 +158,8 @@ const HomeScreen: React.FC<any> = () => {
     setInput('');
     setDueDate(null);
     setDueTime(null);
+    setPriority('Medium');
+    setCategory('Personal');
   };
 
   const startEditing = (todo: Todo) => {
@@ -153,6 +167,8 @@ const HomeScreen: React.FC<any> = () => {
     setInput(todo.title);
     setDueDate(todo.dueDate ? new Date(todo.dueDate) : null);
     setDueTime(todo.dueTime ? new Date(todo.dueTime) : null);
+    setPriority(todo.priority || 'Medium');
+    setCategory(todo.category || 'Personal');
   };
 
   const cancelEditing = () => {
@@ -160,6 +176,8 @@ const HomeScreen: React.FC<any> = () => {
     setInput('');
     setDueDate(null);
     setDueTime(null);
+    setPriority('Medium');
+    setCategory('Personal');
   };
 
   // DELETE
@@ -302,6 +320,64 @@ const HomeScreen: React.FC<any> = () => {
         })}
       </View>
 
+      <View style={styles.optionSection}>
+        <Text style={[styles.optionLabel, { color: theme.text }]}>Priority</Text>
+        <View style={styles.optionRow}>
+          {(['High', 'Medium', 'Low'] as PriorityType[]).map(item => {
+            const isActive = priority === item;
+
+            return (
+              <TouchableOpacity
+                key={item}
+                style={[
+                  styles.optionButton,
+                  { backgroundColor: isActive ? theme.filterActive : theme.filterBg },
+                ]}
+                onPress={() => setPriority(item)}
+              >
+                <Text
+                  style={[
+                    styles.optionText,
+                    { color: isActive ? '#FFFFFF' : theme.text },
+                  ]}
+                >
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.optionSection}>
+        <Text style={[styles.optionLabel, { color: theme.text }]}>Category</Text>
+        <View style={styles.optionRow}>
+          {(['Work', 'Personal', 'Study'] as CategoryType[]).map(item => {
+            const isActive = category === item;
+
+            return (
+              <TouchableOpacity
+                key={item}
+                style={[
+                  styles.optionButton,
+                  { backgroundColor: isActive ? theme.filterActive : theme.filterBg },
+                ]}
+                onPress={() => setCategory(item)}
+              >
+                <Text
+                  style={[
+                    styles.optionText,
+                    { color: isActive ? '#FFFFFF' : theme.text },
+                  ]}
+                >
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
       {/* INPUT */}
       <View style={styles.inputContainer}>
         <TextInput
@@ -395,6 +471,9 @@ const HomeScreen: React.FC<any> = () => {
                   <Text style={{ color: theme.subText }}>
                     Status: {currentStatus}
                   </Text>
+                  <Text style={{ color: theme.subText }}>
+                    Priority: {item.priority || 'Medium'} | Category: {item.category || 'Personal'}
+                  </Text>
                 </View>
 
                 <View style={styles.actionButtons}>
@@ -457,6 +536,34 @@ const styles = StyleSheet.create({
   },
 
   filterText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  optionSection: {
+    marginBottom: 12,
+  },
+
+  optionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+
+  optionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+
+  optionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+
+  optionText: {
     fontSize: 13,
     fontWeight: '600',
   },

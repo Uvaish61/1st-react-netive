@@ -24,6 +24,7 @@ const HomeScreen: React.FC<any> = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [todos, setTodos] = useState<Todo[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
 
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [dueTime, setDueTime] = useState<Date | null>(null);
@@ -106,9 +107,31 @@ const HomeScreen: React.FC<any> = () => {
   const addTodo = async () => {
     if (input.trim() === '') return;
 
+    if (editingTodoId) {
+      const updatedTodos = todos.map(todo =>
+        todo.id === editingTodoId
+          ? {
+              ...todo,
+              title: input.trim(),
+              dueDate: dueDate ? dueDate.toISOString() : null,
+              dueTime: dueTime ? dueTime.toISOString() : null,
+            }
+          : todo,
+      );
+
+      setTodos(updatedTodos);
+      await saveTodo(updatedTodos);
+
+      setEditingTodoId(null);
+      setInput('');
+      setDueDate(null);
+      setDueTime(null);
+      return;
+    }
+
     const newTodo: Todo = {
       id: Date.now().toString(),
-      title: input,
+      title: input.trim(),
       completed: false,
       dueDate: dueDate ? dueDate.toISOString() : null,
       dueTime: dueTime ? dueTime.toISOString() : null,
@@ -120,6 +143,20 @@ const HomeScreen: React.FC<any> = () => {
     setTodos(updatedTodos);
     await saveTodo(updatedTodos);
 
+    setInput('');
+    setDueDate(null);
+    setDueTime(null);
+  };
+
+  const startEditing = (todo: Todo) => {
+    setEditingTodoId(todo.id);
+    setInput(todo.title);
+    setDueDate(todo.dueDate ? new Date(todo.dueDate) : null);
+    setDueTime(todo.dueTime ? new Date(todo.dueTime) : null);
+  };
+
+  const cancelEditing = () => {
+    setEditingTodoId(null);
     setInput('');
     setDueDate(null);
     setDueTime(null);
@@ -269,16 +306,24 @@ const HomeScreen: React.FC<any> = () => {
       <View style={styles.inputContainer}>
         <TextInput
           style={[styles.input, { backgroundColor: theme.input, color: theme.text }]}
-          placeholder="Add task..."
+          placeholder={editingTodoId ? 'Update task...' : 'Add task...'}
           placeholderTextColor={theme.subText}
           value={input}
           onChangeText={setInput}
         />
 
         <TouchableOpacity style={styles.addButton} onPress={addTodo}>
-          <Text style={styles.addButtonText}>Add</Text>
+          <Text style={styles.addButtonText}>
+            {editingTodoId ? 'Update' : 'Add'}
+          </Text>
         </TouchableOpacity>
       </View>
+
+      {editingTodoId && (
+        <TouchableOpacity style={styles.cancelEditButton} onPress={cancelEditing}>
+          <Text style={{ color: theme.text }}>Cancel editing</Text>
+        </TouchableOpacity>
+      )}
 
       {/* DATE + TIME */}
       <View style={{ flexDirection: 'row', marginBottom: 10 }}>
@@ -352,9 +397,18 @@ const HomeScreen: React.FC<any> = () => {
                   </Text>
                 </View>
 
-                <TouchableOpacity onPress={() => confirmDelete(item.id)}>
-                  <Text style={{ color: 'red' }}>Delete</Text>
-                </TouchableOpacity>
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={styles.iconButton}
+                    onPress={() => startEditing(item)}
+                  >
+                    <Icon name="create-outline" size={18} color={theme.text} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => confirmDelete(item.id)}>
+                    <Text style={{ color: 'red' }}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
               </Animated.View>
             </Swipeable>
           );
@@ -422,6 +476,11 @@ const styles = StyleSheet.create({
 
   addButtonText: { color: '#fff' },
 
+  cancelEditButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+  },
+
   dateButton: {
     backgroundColor: '#ddd',
     padding: 10,
@@ -460,6 +519,16 @@ const styles = StyleSheet.create({
   deleteText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+
+  iconButton: {
+    padding: 4,
   },
 
   emptyText: {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,137 +9,196 @@ import {
   Alert,
   Animated,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Swipeable } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import { Todo } from '../types/todo.types';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { saveTodo, loadTodos } from '../storage/todo.storage';
-import { Swipeable } from 'react-native-gesture-handler';
+import { loadTodos, saveTodo } from '../storage/todo.storage';
+import {
+  cancelTodoReminder,
+  syncTodoReminders,
+} from '../utils/todoNotifications';
 
 type FilterType = 'all' | 'pending' | 'completed' | 'overdue';
 type PriorityType = 'High' | 'Medium' | 'Low';
 type CategoryType = 'Work' | 'Personal' | 'Study';
 
-const HomeScreen: React.FC<any> = () => {
+const DEFAULT_PRIORITY: PriorityType = 'Medium';
+const DEFAULT_CATEGORY: CategoryType = 'Personal';
 
+const getDueDateTime = (todo: Pick<Todo, 'dueDate' | 'dueTime'>) => {
+  if (!todo.dueDate) {
+    return null;
+  }
+
+  const dueDateTime = new Date(todo.dueDate);
+
+  if (todo.dueTime) {
+    const time = new Date(todo.dueTime);
+    dueDateTime.setHours(
+      time.getHours(),
+      time.getMinutes(),
+      time.getSeconds(),
+      time.getMilliseconds(),
+    );
+  } else {
+    dueDateTime.setHours(23, 59, 59, 999);
+  }
+
+  return dueDateTime;
+};
+
+const getTodoStatus = (todo: Todo): Exclude<FilterType, 'all'> => {
+  if (todo.completed) {
+    return 'completed';
+  }
+
+  const dueDateTime = getDueDateTime(todo);
+
+  if (!dueDateTime) {
+    return 'pending';
+  }
+
+  return dueDateTime.getTime() < Date.now() ? 'overdue' : 'pending';
+};
+
+const normalizeTodo = (todo: Todo): Todo => ({
+  ...todo,
+  completed: typeof todo.completed === 'boolean' ? todo.completed : false,
+  dueDate: todo.dueDate || null,
+  dueTime: todo.dueTime || null,
+  completedAt: todo.completedAt || null,
+  priority: (todo.priority as PriorityType) || DEFAULT_PRIORITY,
+  category: (todo.category as CategoryType) || DEFAULT_CATEGORY,
+  status: todo.completed ? 'completed' : getTodoStatus(todo),
+});
+
+const HomeScreen: React.FC<any> = () => {
   const [input, setInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [todos, setTodos] = useState<Todo[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
-  const [priority, setPriority] = useState<PriorityType>('Medium');
-  const [category, setCategory] = useState<CategoryType>('Personal');
-
+  const [priority, setPriority] = useState<PriorityType>(DEFAULT_PRIORITY);
+  const [category, setCategory] = useState<CategoryType>(DEFAULT_CATEGORY);
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [dueTime, setDueTime] = useState<Date | null>(null);
-
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-
   const [darkMode, setDarkMode] = useState(false);
 
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;
+
+  const resetForm = () => {
+    setEditingTodoId(null);
+    setInput('');
+    setDueDate(null);
+    setDueTime(null);
+    setPriority(DEFAULT_PRIORITY);
+    setCategory(DEFAULT_CATEGORY);
+  };
+
+  const saveTodosWithSideEffects = async (nextTodos: Todo[]) => {
+    setTodos(nextTodos);
+    await saveTodo(nextTodos);
+    await syncTodoReminders(nextTodos);
+  };
+
+  const refreshStatuses = async (sourceTodos?: Todo[]) => {
+    const baseTodos = sourceTodos || todos;
+    const normalizedTodos = baseTodos.map(normalizeTodo);
+    const hasChanges = normalizedTodos.some(
+      (todo, index) =>
+        todo.status !== baseTodos[index]?.status ||
+        todo.priority !== baseTodos[index]?.priority ||
+        todo.category !== baseTodos[index]?.category,
+    );
+
+    if (!sourceTodos && !hasChanges) {
+      return;
+    }
+
+    if (hasChanges) {
+      setTodos(normalizedTodos);
+      await saveTodo(normalizedTodos);
+    } else if (sourceTodos) {
+      setTodos(normalizedTodos);
+    }
+
+    await syncTodoReminders(normalizedTodos);
+  };
 
   const getAnimation = (id: string) => {
     if (!animations[id]) {
       animations[id] = new Animated.Value(1);
     }
+
     return animations[id];
   };
 
-  const getTodoStatus = (todo: Todo): FilterType | 'pending' => {
-    if (todo.completed) {
-      return 'completed';
-    }
+  const filteredTodos = useMemo(
+    () =>
+      todos.filter(todo => {
+        const matchesSearch = todo.title
+          .toLowerCase()
+          .includes(searchQuery.trim().toLowerCase());
 
-    if (!todo.dueDate) {
-      return 'pending';
-    }
+        const currentStatus = getTodoStatus(todo);
+        const matchesFilter =
+          activeFilter === 'all' ? true : currentStatus === activeFilter;
 
-    const dueDateTime = new Date(todo.dueDate);
+        return matchesSearch && matchesFilter;
+      }),
+    [activeFilter, searchQuery, todos],
+  );
 
-    if (todo.dueTime) {
-      const time = new Date(todo.dueTime);
-      dueDateTime.setHours(
-        time.getHours(),
-        time.getMinutes(),
-        time.getSeconds(),
-        time.getMilliseconds(),
-      );
-    } else {
-      dueDateTime.setHours(23, 59, 59, 999);
-    }
-
-    return dueDateTime.getTime() < Date.now() ? 'overdue' : 'pending';
-  };
-
-  const filteredTodos = todos.filter(todo => {
-    const matchesSearch = todo.title
-      .toLowerCase()
-      .includes(searchQuery.trim().toLowerCase());
-
-    const currentStatus = getTodoStatus(todo);
-    const matchesFilter =
-      activeFilter === 'all' ? true : currentStatus === activeFilter;
-
-    return matchesSearch && matchesFilter;
-  });
-
-  // LOAD TODOS
   useEffect(() => {
     const fetchTodos = async () => {
       const localTodos = await loadTodos();
-
-      const validTodos = Array.isArray(localTodos)
-        ? localTodos.map(todo => ({
-            ...todo,
-            completed: typeof todo.completed === 'boolean' ? todo.completed : false,
-            dueDate: todo.dueDate || null,
-            dueTime: todo.dueTime || null,
-            status: (todo.status as 'pending' | 'completed' | 'overdue') || 'pending',
-            completedAt: todo.completedAt || null,
-            priority: (todo.priority as PriorityType) || 'Medium',
-            category: (todo.category as CategoryType) || 'Personal',
-          }))
+      const normalizedTodos = Array.isArray(localTodos)
+        ? localTodos.map(normalizeTodo)
         : [];
 
-      setTodos(validTodos);
+      await refreshStatuses(normalizedTodos);
     };
 
     fetchTodos();
   }, []);
 
-  // ADD TODO
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      refreshStatuses();
+    }, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [todos]);
+
   const addTodo = async () => {
-    if (input.trim() === '') return;
+    if (input.trim() === '') {
+      return;
+    }
 
     if (editingTodoId) {
       const updatedTodos = todos.map(todo =>
         todo.id === editingTodoId
-          ? {
+          ? normalizeTodo({
               ...todo,
               title: input.trim(),
               dueDate: dueDate ? dueDate.toISOString() : null,
               dueTime: dueTime ? dueTime.toISOString() : null,
               priority,
               category,
-            }
+            })
           : todo,
       );
 
-      setTodos(updatedTodos);
-      await saveTodo(updatedTodos);
-
-      setEditingTodoId(null);
-      setInput('');
-      setDueDate(null);
-      setDueTime(null);
-      setPriority('Medium');
-      setCategory('Personal');
+      await saveTodosWithSideEffects(updatedTodos);
+      resetForm();
       return;
     }
 
-    const newTodo: Todo = {
+    const newTodo = normalizeTodo({
       id: Date.now().toString(),
       title: input.trim(),
       completed: false,
@@ -149,17 +208,10 @@ const HomeScreen: React.FC<any> = () => {
       completedAt: null,
       priority,
       category,
-    };
+    });
 
-    const updatedTodos = [...todos, newTodo];
-    setTodos(updatedTodos);
-    await saveTodo(updatedTodos);
-
-    setInput('');
-    setDueDate(null);
-    setDueTime(null);
-    setPriority('Medium');
-    setCategory('Personal');
+    await saveTodosWithSideEffects([...todos, newTodo]);
+    resetForm();
   };
 
   const startEditing = (todo: Todo) => {
@@ -167,24 +219,14 @@ const HomeScreen: React.FC<any> = () => {
     setInput(todo.title);
     setDueDate(todo.dueDate ? new Date(todo.dueDate) : null);
     setDueTime(todo.dueTime ? new Date(todo.dueTime) : null);
-    setPriority(todo.priority || 'Medium');
-    setCategory(todo.category || 'Personal');
+    setPriority(todo.priority || DEFAULT_PRIORITY);
+    setCategory(todo.category || DEFAULT_CATEGORY);
   };
 
-  const cancelEditing = () => {
-    setEditingTodoId(null);
-    setInput('');
-    setDueDate(null);
-    setDueTime(null);
-    setPriority('Medium');
-    setCategory('Personal');
-  };
-
-  // DELETE
   const deleteTodo = async (id: string) => {
     const updatedTodos = todos.filter(todo => todo.id !== id);
-    setTodos(updatedTodos);
-    await saveTodo(updatedTodos);
+    await cancelTodoReminder(id);
+    await saveTodosWithSideEffects(updatedTodos);
   };
 
   const confirmDelete = (id: string) => {
@@ -194,7 +236,6 @@ const HomeScreen: React.FC<any> = () => {
     ]);
   };
 
-  // ANIMATION + COMPLETE
   const toggleComplete = async (id: string) => {
     const anim = getAnimation(id);
 
@@ -211,24 +252,24 @@ const HomeScreen: React.FC<any> = () => {
       }),
     ]).start();
 
-    const updatedTodos: Todo[] = todos.map((todo): Todo => {
-      if (todo.id === id) {
-        const now = new Date();
-        return {
-          ...todo,
-          completed: !todo.completed,
-          status: !todo.completed ? 'completed' : 'pending',
-          completedAt: !todo.completed ? now.toISOString() : null,
-        };
+    const updatedTodos = todos.map(todo => {
+      if (todo.id !== id) {
+        return todo;
       }
-      return todo;
+
+      const nextCompleted = !todo.completed;
+
+      return normalizeTodo({
+        ...todo,
+        completed: nextCompleted,
+        completedAt: nextCompleted ? new Date().toISOString() : null,
+        status: nextCompleted ? 'completed' : 'pending',
+      });
     });
 
-    setTodos(updatedTodos);
-    await saveTodo(updatedTodos);
+    await saveTodosWithSideEffects(updatedTodos);
   };
 
-  // SWIPE ACTION
   const renderRightActions = (id: string) => (
     <TouchableOpacity
       style={styles.deleteSwipe}
@@ -238,7 +279,6 @@ const HomeScreen: React.FC<any> = () => {
     </TouchableOpacity>
   );
 
-  // THEME
   const theme = darkMode
     ? {
         bg: '#121212',
@@ -263,14 +303,12 @@ const HomeScreen: React.FC<any> = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-
-      {/* DARK MODE */}
       <TouchableOpacity
         style={{ alignSelf: 'flex-end', marginBottom: 10 }}
         onPress={() => setDarkMode(!darkMode)}
       >
         <Text style={{ color: theme.text }}>
-          {darkMode ? '☀️ Light' : '🌙 Dark'}
+          {darkMode ? 'Light' : 'Dark'}
         </Text>
       </TouchableOpacity>
 
@@ -378,7 +416,6 @@ const HomeScreen: React.FC<any> = () => {
         </View>
       </View>
 
-      {/* INPUT */}
       <View style={styles.inputContainer}>
         <TextInput
           style={[styles.input, { backgroundColor: theme.input, color: theme.text }]}
@@ -396,12 +433,11 @@ const HomeScreen: React.FC<any> = () => {
       </View>
 
       {editingTodoId && (
-        <TouchableOpacity style={styles.cancelEditButton} onPress={cancelEditing}>
+        <TouchableOpacity style={styles.cancelEditButton} onPress={resetForm}>
           <Text style={{ color: theme.text }}>Cancel editing</Text>
         </TouchableOpacity>
       )}
 
-      {/* DATE + TIME */}
       <View style={{ flexDirection: 'row', marginBottom: 10 }}>
         <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
           <Text>Select Date</Text>
@@ -416,9 +452,11 @@ const HomeScreen: React.FC<any> = () => {
         <DateTimePicker
           value={dueDate || new Date()}
           mode="date"
-          onChange={(e, d) => {
+          onChange={(_, selectedDate) => {
             setShowDatePicker(false);
-            if (d) setDueDate(d);
+            if (selectedDate) {
+              setDueDate(selectedDate);
+            }
           }}
         />
       )}
@@ -427,14 +465,15 @@ const HomeScreen: React.FC<any> = () => {
         <DateTimePicker
           value={dueTime || new Date()}
           mode="time"
-          onChange={(e, t) => {
+          onChange={(_, selectedTime) => {
             setShowTimePicker(false);
-            if (t) setDueTime(t);
+            if (selectedTime) {
+              setDueTime(selectedTime);
+            }
           }}
         />
       )}
 
-      {/* LIST */}
       <FlatList
         data={filteredTodos}
         keyExtractor={item => item.id}
@@ -446,6 +485,7 @@ const HomeScreen: React.FC<any> = () => {
         renderItem={({ item }) => {
           const anim = getAnimation(item.id);
           const currentStatus = getTodoStatus(item);
+          const hasReminder = Boolean(item.dueDate && item.dueTime && !item.completed);
 
           return (
             <Swipeable renderRightActions={() => renderRightActions(item.id)}>
@@ -465,15 +505,14 @@ const HomeScreen: React.FC<any> = () => {
                 />
 
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.text }}>
-                    {item.title}
-                  </Text>
+                  <Text style={{ color: theme.text }}>{item.title}</Text>
+                  <Text style={{ color: theme.subText }}>Status: {currentStatus}</Text>
                   <Text style={{ color: theme.subText }}>
-                    Status: {currentStatus}
+                    Priority: {item.priority || DEFAULT_PRIORITY} | Category: {item.category || DEFAULT_CATEGORY}
                   </Text>
-                  <Text style={{ color: theme.subText }}>
-                    Priority: {item.priority || 'Medium'} | Category: {item.category || 'Personal'}
-                  </Text>
+                  {hasReminder && (
+                    <Text style={{ color: theme.subText }}>Reminder scheduled</Text>
+                  )}
                 </View>
 
                 <View style={styles.actionButtons}>
@@ -501,11 +540,8 @@ export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
-
   title: { fontSize: 28, fontWeight: 'bold', marginBottom: 20 },
-
   inputContainer: { flexDirection: 'row', marginBottom: 10 },
-
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -514,19 +550,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 12,
   },
-
   searchInput: {
     flex: 1,
     paddingVertical: 10,
     marginLeft: 8,
   },
-
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginBottom: 12,
   },
-
   filterButton: {
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -534,27 +567,22 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
   },
-
   filterText: {
     fontSize: 13,
     fontWeight: '600',
   },
-
   optionSection: {
     marginBottom: 12,
   },
-
   optionLabel: {
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 8,
   },
-
   optionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
-
   optionButton: {
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -562,39 +590,32 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
   },
-
   optionText: {
     fontSize: 13,
     fontWeight: '600',
   },
-
   input: {
     flex: 1,
     padding: 10,
     borderRadius: 8,
   },
-
   addButton: {
     backgroundColor: '#4CAF50',
     padding: 10,
     marginLeft: 10,
     borderRadius: 8,
   },
-
   addButtonText: { color: '#fff' },
-
   cancelEditButton: {
     alignSelf: 'flex-start',
     marginBottom: 12,
   },
-
   dateButton: {
     backgroundColor: '#ddd',
     padding: 10,
     marginRight: 10,
     borderRadius: 6,
   },
-
   todoItem: {
     padding: 12,
     borderRadius: 8,
@@ -602,18 +623,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-
   checkbox: {
     width: 20,
     height: 20,
     borderWidth: 2,
     marginRight: 10,
   },
-
   checkboxChecked: {
     backgroundColor: '#4CAF50',
   },
-
   deleteSwipe: {
     backgroundColor: '#ef4444',
     justifyContent: 'center',
@@ -622,22 +640,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
   },
-
   deleteText: {
     color: '#fff',
     fontWeight: 'bold',
   },
-
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-
   iconButton: {
     padding: 4,
   },
-
   emptyText: {
     textAlign: 'center',
     marginTop: 40,

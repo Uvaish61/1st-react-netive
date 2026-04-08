@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -74,6 +74,25 @@ const normalizeTodo = (todo: Todo): Todo => ({
   status: todo.completed ? 'completed' : getTodoStatus(todo),
 });
 
+const sortTodosByDueDate = (left: Todo, right: Todo) => {
+  const leftDueDate = getDueDateTime(left);
+  const rightDueDate = getDueDateTime(right);
+
+  if (!leftDueDate && !rightDueDate) {
+    return Number(right.id) - Number(left.id);
+  }
+
+  if (!leftDueDate) {
+    return 1;
+  }
+
+  if (!rightDueDate) {
+    return -1;
+  }
+
+  return leftDueDate.getTime() - rightDueDate.getTime();
+};
+
 const HomeScreen: React.FC<any> = () => {
   const [input, setInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -105,7 +124,7 @@ const HomeScreen: React.FC<any> = () => {
     await syncTodoReminders(nextTodos);
   };
 
-  const refreshStatuses = async (sourceTodos?: Todo[]) => {
+  const refreshStatuses = useCallback(async (sourceTodos?: Todo[]) => {
     const baseTodos = sourceTodos || todos;
     const normalizedTodos = baseTodos.map(normalizeTodo);
     const hasChanges = normalizedTodos.some(
@@ -127,7 +146,7 @@ const HomeScreen: React.FC<any> = () => {
     }
 
     await syncTodoReminders(normalizedTodos);
-  };
+  }, [todos]);
 
   const getAnimation = (id: string) => {
     if (!animations[id]) {
@@ -153,6 +172,33 @@ const HomeScreen: React.FC<any> = () => {
     [activeFilter, searchQuery, todos],
   );
 
+  const summary = useMemo(
+    () => ({
+      total: todos.length,
+      pending: todos.filter(todo => getTodoStatus(todo) === 'pending').length,
+      overdue: todos.filter(todo => getTodoStatus(todo) === 'overdue').length,
+      completed: todos.filter(todo => todo.completed).length,
+    }),
+    [todos],
+  );
+
+  const activeTodos = useMemo(
+    () => filteredTodos.filter(todo => !todo.completed).sort(sortTodosByDueDate),
+    [filteredTodos],
+  );
+
+  const completedTodos = useMemo(
+    () =>
+      filteredTodos
+        .filter(todo => todo.completed)
+        .sort((left, right) => {
+          const leftCompleted = left.completedAt ? new Date(left.completedAt).getTime() : 0;
+          const rightCompleted = right.completedAt ? new Date(right.completedAt).getTime() : 0;
+          return rightCompleted - leftCompleted;
+        }),
+    [filteredTodos],
+  );
+
   useEffect(() => {
     const fetchTodos = async () => {
       const localTodos = await loadTodos();
@@ -164,7 +210,7 @@ const HomeScreen: React.FC<any> = () => {
     };
 
     fetchTodos();
-  }, []);
+  }, [refreshStatuses]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -172,7 +218,7 @@ const HomeScreen: React.FC<any> = () => {
     }, 60000);
 
     return () => clearInterval(intervalId);
-  }, [todos]);
+  }, [refreshStatuses]);
 
   const addTodo = async () => {
     if (input.trim() === '') {
@@ -301,6 +347,59 @@ const HomeScreen: React.FC<any> = () => {
         filterActive: '#4CAF50',
       };
 
+  const showCompletedSection = activeFilter === 'all';
+  const listData = showCompletedSection ? activeTodos : filteredTodos.sort(sortTodosByDueDate);
+
+  const renderTodoItem = ({ item }: { item: Todo }) => {
+    const anim = getAnimation(item.id);
+    const currentStatus = getTodoStatus(item);
+    const hasReminder = Boolean(item.dueDate && item.dueTime && !item.completed);
+
+    return (
+      <Swipeable renderRightActions={() => renderRightActions(item.id)}>
+        <Animated.View
+          style={[
+            styles.todoItem,
+            {
+              backgroundColor: theme.card,
+              transform: [{ scale: anim }],
+              opacity: anim,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={[styles.checkbox, item.completed && styles.checkboxChecked]}
+            onPress={() => toggleComplete(item.id)}
+          />
+
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: theme.text }}>{item.title}</Text>
+            <Text style={{ color: theme.subText }}>Status: {currentStatus}</Text>
+            <Text style={{ color: theme.subText }}>
+              Priority: {item.priority || DEFAULT_PRIORITY} | Category: {item.category || DEFAULT_CATEGORY}
+            </Text>
+            {hasReminder && (
+              <Text style={{ color: theme.subText }}>Reminder scheduled</Text>
+            )}
+          </View>
+
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => startEditing(item)}
+            >
+              <Icon name="create-outline" size={18} color={theme.text} />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => confirmDelete(item.id)}>
+              <Text style={{ color: 'red' }}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </Swipeable>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <TouchableOpacity
@@ -313,6 +412,25 @@ const HomeScreen: React.FC<any> = () => {
       </TouchableOpacity>
 
       <Text style={[styles.title, { color: theme.text }]}>My Task</Text>
+
+      <View style={styles.summaryRow}>
+        <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
+          <Text style={[styles.summaryCount, { color: theme.text }]}>{summary.total}</Text>
+          <Text style={{ color: theme.subText }}>Total</Text>
+        </View>
+        <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
+          <Text style={[styles.summaryCount, { color: theme.text }]}>{summary.pending}</Text>
+          <Text style={{ color: theme.subText }}>Pending</Text>
+        </View>
+        <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
+          <Text style={[styles.summaryCount, { color: theme.text }]}>{summary.completed}</Text>
+          <Text style={{ color: theme.subText }}>Completed</Text>
+        </View>
+        <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
+          <Text style={[styles.summaryCount, { color: theme.text }]}>{summary.overdue}</Text>
+          <Text style={{ color: theme.subText }}>Overdue</Text>
+        </View>
+      </View>
 
       <View
         style={[
@@ -475,62 +593,26 @@ const HomeScreen: React.FC<any> = () => {
       )}
 
       <FlatList
-        data={filteredTodos}
+        data={listData}
         keyExtractor={item => item.id}
         ListEmptyComponent={
           <Text style={[styles.emptyText, { color: theme.subText }]}>
             No tasks found for this filter.
           </Text>
         }
-        renderItem={({ item }) => {
-          const anim = getAnimation(item.id);
-          const currentStatus = getTodoStatus(item);
-          const hasReminder = Boolean(item.dueDate && item.dueTime && !item.completed);
-
-          return (
-            <Swipeable renderRightActions={() => renderRightActions(item.id)}>
-              <Animated.View
-                style={[
-                  styles.todoItem,
-                  {
-                    backgroundColor: theme.card,
-                    transform: [{ scale: anim }],
-                    opacity: anim,
-                  },
-                ]}
-              >
-                <TouchableOpacity
-                  style={[styles.checkbox, item.completed && styles.checkboxChecked]}
-                  onPress={() => toggleComplete(item.id)}
-                />
-
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.text }}>{item.title}</Text>
-                  <Text style={{ color: theme.subText }}>Status: {currentStatus}</Text>
-                  <Text style={{ color: theme.subText }}>
-                    Priority: {item.priority || DEFAULT_PRIORITY} | Category: {item.category || DEFAULT_CATEGORY}
-                  </Text>
-                  {hasReminder && (
-                    <Text style={{ color: theme.subText }}>Reminder scheduled</Text>
-                  )}
-                </View>
-
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    style={styles.iconButton}
-                    onPress={() => startEditing(item)}
-                  >
-                    <Icon name="create-outline" size={18} color={theme.text} />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity onPress={() => confirmDelete(item.id)}>
-                    <Text style={{ color: 'red' }}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              </Animated.View>
-            </Swipeable>
-          );
-        }}
+        renderItem={renderTodoItem}
+        ListFooterComponent={
+          showCompletedSection && completedTodos.length > 0 ? (
+            <View style={styles.completedSection}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                Completed Tasks ({completedTodos.length})
+              </Text>
+              {completedTodos.map(todo => (
+                <View key={todo.id}>{renderTodoItem({ item: todo })}</View>
+              ))}
+            </View>
+          ) : null
+        }
       />
     </View>
   );
@@ -541,6 +623,23 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
   title: { fontSize: 28, fontWeight: 'bold', marginBottom: 20 },
+  summaryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+  },
+  summaryCard: {
+    minWidth: 74,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  summaryCount: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
   inputContainer: { flexDirection: 'row', marginBottom: 10 },
   searchContainer: {
     flexDirection: 'row',
@@ -651,6 +750,15 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 4,
+  },
+  completedSection: {
+    marginTop: 12,
+    paddingBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 10,
   },
   emptyText: {
     textAlign: 'center',

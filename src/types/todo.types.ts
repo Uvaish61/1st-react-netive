@@ -8,6 +8,7 @@ export interface Todo {
     completedAt: string | null;
     priority?: 'High' | 'Medium' | 'Low';
     category?: 'Work' | 'Personal' | 'Study';
+    repeat?: 'none' | 'daily' | 'weekly';
     completionType?: "early" | "ontime" | "late"
     }
     

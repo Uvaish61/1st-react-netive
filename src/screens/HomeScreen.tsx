@@ -23,9 +23,11 @@ import {
 type FilterType = 'all' | 'pending' | 'completed' | 'overdue';
 type PriorityType = 'High' | 'Medium' | 'Low';
 type CategoryType = 'Work' | 'Personal' | 'Study';
+type RepeatType = 'none' | 'daily' | 'weekly';
 
 const DEFAULT_PRIORITY: PriorityType = 'Medium';
 const DEFAULT_CATEGORY: CategoryType = 'Personal';
+const DEFAULT_REPEAT: RepeatType = 'none';
 
 const getDueDateTime = (todo: Pick<Todo, 'dueDate' | 'dueTime'>) => {
   if (!todo.dueDate) {
@@ -71,8 +73,25 @@ const normalizeTodo = (todo: Todo): Todo => ({
   completedAt: todo.completedAt || null,
   priority: (todo.priority as PriorityType) || DEFAULT_PRIORITY,
   category: (todo.category as CategoryType) || DEFAULT_CATEGORY,
+  repeat: (todo.repeat as RepeatType) || DEFAULT_REPEAT,
   status: todo.completed ? 'completed' : getTodoStatus(todo),
 });
+
+const getNextRecurringDate = (todo: Todo) => {
+  if (!todo.dueDate || !todo.repeat || todo.repeat === 'none') {
+    return null;
+  }
+
+  const nextDate = new Date(todo.dueDate);
+
+  if (todo.repeat === 'daily') {
+    nextDate.setDate(nextDate.getDate() + 1);
+  } else if (todo.repeat === 'weekly') {
+    nextDate.setDate(nextDate.getDate() + 7);
+  }
+
+  return nextDate.toISOString();
+};
 
 const sortTodosByDueDate = (left: Todo, right: Todo) => {
   const leftDueDate = getDueDateTime(left);
@@ -101,6 +120,7 @@ const HomeScreen: React.FC<any> = () => {
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [priority, setPriority] = useState<PriorityType>(DEFAULT_PRIORITY);
   const [category, setCategory] = useState<CategoryType>(DEFAULT_CATEGORY);
+  const [repeat, setRepeat] = useState<RepeatType>(DEFAULT_REPEAT);
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [dueTime, setDueTime] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -116,6 +136,7 @@ const HomeScreen: React.FC<any> = () => {
     setDueTime(null);
     setPriority(DEFAULT_PRIORITY);
     setCategory(DEFAULT_CATEGORY);
+    setRepeat(DEFAULT_REPEAT);
   };
 
   const saveTodosWithSideEffects = async (nextTodos: Todo[]) => {
@@ -235,6 +256,7 @@ const HomeScreen: React.FC<any> = () => {
               dueTime: dueTime ? dueTime.toISOString() : null,
               priority,
               category,
+              repeat,
             })
           : todo,
       );
@@ -254,6 +276,7 @@ const HomeScreen: React.FC<any> = () => {
       completedAt: null,
       priority,
       category,
+      repeat,
     });
 
     await saveTodosWithSideEffects([...todos, newTodo]);
@@ -267,6 +290,7 @@ const HomeScreen: React.FC<any> = () => {
     setDueTime(todo.dueTime ? new Date(todo.dueTime) : null);
     setPriority(todo.priority || DEFAULT_PRIORITY);
     setCategory(todo.category || DEFAULT_CATEGORY);
+    setRepeat(todo.repeat || DEFAULT_REPEAT);
   };
 
   const deleteTodo = async (id: string) => {
@@ -312,6 +336,29 @@ const HomeScreen: React.FC<any> = () => {
         status: nextCompleted ? 'completed' : 'pending',
       });
     });
+
+    const completedTodo = updatedTodos.find(todo => todo.id === id);
+
+    if (
+      completedTodo?.completed &&
+      completedTodo.repeat &&
+      completedTodo.repeat !== 'none'
+    ) {
+      const nextDueDate = getNextRecurringDate(completedTodo);
+
+      if (nextDueDate) {
+        updatedTodos.push(
+          normalizeTodo({
+            ...completedTodo,
+            id: `${Date.now()}-${completedTodo.id}`,
+            completed: false,
+            completedAt: null,
+            dueDate: nextDueDate,
+            status: 'pending',
+          }),
+        );
+      }
+    }
 
     await saveTodosWithSideEffects(updatedTodos);
   };
@@ -377,6 +424,9 @@ const HomeScreen: React.FC<any> = () => {
             <Text style={{ color: theme.subText }}>Status: {currentStatus}</Text>
             <Text style={{ color: theme.subText }}>
               Priority: {item.priority || DEFAULT_PRIORITY} | Category: {item.category || DEFAULT_CATEGORY}
+            </Text>
+            <Text style={{ color: theme.subText }}>
+              Repeat: {item.repeat || DEFAULT_REPEAT}
             </Text>
             {hasReminder && (
               <Text style={{ color: theme.subText }}>Reminder scheduled</Text>
@@ -527,6 +577,35 @@ const HomeScreen: React.FC<any> = () => {
                   ]}
                 >
                   {item}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.optionSection}>
+        <Text style={[styles.optionLabel, { color: theme.text }]}>Repeat</Text>
+        <View style={styles.optionRow}>
+          {(['none', 'daily', 'weekly'] as RepeatType[]).map(item => {
+            const isActive = repeat === item;
+
+            return (
+              <TouchableOpacity
+                key={item}
+                style={[
+                  styles.optionButton,
+                  { backgroundColor: isActive ? theme.filterActive : theme.filterBg },
+                ]}
+                onPress={() => setRepeat(item)}
+              >
+                <Text
+                  style={[
+                    styles.optionText,
+                    { color: isActive ? '#FFFFFF' : theme.text },
+                  ]}
+                >
+                  {item.charAt(0).toUpperCase() + item.slice(1)}
                 </Text>
               </TouchableOpacity>
             );

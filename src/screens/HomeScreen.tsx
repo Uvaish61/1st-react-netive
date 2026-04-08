@@ -113,7 +113,7 @@ const HomeScreen: React.FC<any> = () => {
       }),
     ]).start();
 
-    const updatedTodos = todos.map(todo => {
+    const updatedTodos: Todo[] = todos.map((todo): Todo => {
       if (todo.id === id) {
         const now = new Date();
         return {

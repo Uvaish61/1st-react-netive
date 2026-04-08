@@ -9,16 +9,21 @@ import {
   Alert,
   Animated,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 import { Todo } from '../types/todo.types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { saveTodo, loadTodos } from '../storage/todo.storage';
 import { Swipeable } from 'react-native-gesture-handler';
 
+type FilterType = 'all' | 'pending' | 'completed' | 'overdue';
+
 const HomeScreen: React.FC<any> = () => {
 
   const [input, setInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [dueTime, setDueTime] = useState<Date | null>(null);
@@ -36,6 +41,44 @@ const HomeScreen: React.FC<any> = () => {
     }
     return animations[id];
   };
+
+  const getTodoStatus = (todo: Todo): FilterType | 'pending' => {
+    if (todo.completed) {
+      return 'completed';
+    }
+
+    if (!todo.dueDate) {
+      return 'pending';
+    }
+
+    const dueDateTime = new Date(todo.dueDate);
+
+    if (todo.dueTime) {
+      const time = new Date(todo.dueTime);
+      dueDateTime.setHours(
+        time.getHours(),
+        time.getMinutes(),
+        time.getSeconds(),
+        time.getMilliseconds(),
+      );
+    } else {
+      dueDateTime.setHours(23, 59, 59, 999);
+    }
+
+    return dueDateTime.getTime() < Date.now() ? 'overdue' : 'pending';
+  };
+
+  const filteredTodos = todos.filter(todo => {
+    const matchesSearch = todo.title
+      .toLowerCase()
+      .includes(searchQuery.trim().toLowerCase());
+
+    const currentStatus = getTodoStatus(todo);
+    const matchesFilter =
+      activeFilter === 'all' ? true : currentStatus === activeFilter;
+
+    return matchesSearch && matchesFilter;
+  });
 
   // LOAD TODOS
   useEffect(() => {
@@ -148,6 +191,9 @@ const HomeScreen: React.FC<any> = () => {
         text: '#FFFFFF',
         subText: '#BBBBBB',
         input: '#2A2A2A',
+        border: '#333333',
+        filterBg: '#2A2A2A',
+        filterActive: '#4CAF50',
       }
     : {
         bg: '#F8F9FA',
@@ -155,6 +201,9 @@ const HomeScreen: React.FC<any> = () => {
         text: '#000000',
         subText: '#555',
         input: '#FFFFFF',
+        border: '#D1D5DB',
+        filterBg: '#E5E7EB',
+        filterActive: '#4CAF50',
       };
 
   return (
@@ -171,6 +220,50 @@ const HomeScreen: React.FC<any> = () => {
       </TouchableOpacity>
 
       <Text style={[styles.title, { color: theme.text }]}>My Task</Text>
+
+      <View
+        style={[
+          styles.searchContainer,
+          { backgroundColor: theme.input, borderColor: theme.border },
+        ]}
+      >
+        <Icon name="search-outline" size={18} color={theme.subText} />
+        <TextInput
+          style={[styles.searchInput, { color: theme.text }]}
+          placeholder="Search tasks..."
+          placeholderTextColor={theme.subText}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
+      <View style={styles.filterRow}>
+        {(['all', 'pending', 'completed', 'overdue'] as FilterType[]).map(filter => {
+          const isActive = activeFilter === filter;
+
+          return (
+            <TouchableOpacity
+              key={filter}
+              style={[
+                styles.filterButton,
+                {
+                  backgroundColor: isActive ? theme.filterActive : theme.filterBg,
+                },
+              ]}
+              onPress={() => setActiveFilter(filter)}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  { color: isActive ? '#FFFFFF' : theme.text },
+                ]}
+              >
+                {filter.charAt(0).toUpperCase() + filter.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       {/* INPUT */}
       <View style={styles.inputContainer}>
@@ -222,10 +315,16 @@ const HomeScreen: React.FC<any> = () => {
 
       {/* LIST */}
       <FlatList
-        data={todos}
+        data={filteredTodos}
         keyExtractor={item => item.id}
+        ListEmptyComponent={
+          <Text style={[styles.emptyText, { color: theme.subText }]}>
+            No tasks found for this filter.
+          </Text>
+        }
         renderItem={({ item }) => {
           const anim = getAnimation(item.id);
+          const currentStatus = getTodoStatus(item);
 
           return (
             <Swipeable renderRightActions={() => renderRightActions(item.id)}>
@@ -249,7 +348,7 @@ const HomeScreen: React.FC<any> = () => {
                     {item.title}
                   </Text>
                   <Text style={{ color: theme.subText }}>
-                    Status: {item.status}
+                    Status: {currentStatus}
                   </Text>
                 </View>
 
@@ -273,6 +372,40 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: 'bold', marginBottom: 20 },
 
   inputContainer: { flexDirection: 'row', marginBottom: 10 },
+
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    marginLeft: 8,
+  },
+
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+  },
+
+  filterButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+
+  filterText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
 
   input: {
     flex: 1,
@@ -327,5 +460,11 @@ const styles = StyleSheet.create({
   deleteText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 40,
+    fontSize: 14,
   },
 });

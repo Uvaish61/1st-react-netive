@@ -1,3 +1,9 @@
+export interface Tag {
+    id: string;
+    name: string;
+    color: string;
+}
+
 export interface Todo {
     id: string;
     title: string
@@ -9,6 +15,7 @@ export interface Todo {
     priority?: 'High' | 'Medium' | 'Low';
     category?: 'Work' | 'Personal' | 'Study';
     repeat?: 'none' | 'daily' | 'weekly';
-    completionType?: "early" | "ontime" | "late"
+    completionType?: "early" | "ontime" | "late";
+    tags?: Tag[];
     }
     

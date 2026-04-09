@@ -8,12 +8,14 @@ import {
   FlatList,
   Alert,
   Animated,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-import { Todo } from '../types/todo.types';
+import { Tag, Todo } from '../types/todo.types';
 import { loadTodos, saveTodo } from '../storage/todo.storage';
 import {
   cancelTodoReminder,
@@ -28,6 +30,8 @@ type RepeatType = 'none' | 'daily' | 'weekly';
 const DEFAULT_PRIORITY: PriorityType = 'Medium';
 const DEFAULT_CATEGORY: CategoryType = 'Personal';
 const DEFAULT_REPEAT: RepeatType = 'none';
+
+const TAG_COLORS = ['#EF4444', '#F97316', '#EAB308', '#22C55E', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6'];
 
 const getDueDateTime = (todo: Pick<Todo, 'dueDate' | 'dueTime'>) => {
   if (!todo.dueDate) {
@@ -126,6 +130,10 @@ const HomeScreen: React.FC<any> = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [showTagModal, setShowTagModal] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+  const [selectedTagColor, setSelectedTagColor] = useState(TAG_COLORS[0]);
 
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;
 
@@ -137,6 +145,21 @@ const HomeScreen: React.FC<any> = () => {
     setPriority(DEFAULT_PRIORITY);
     setCategory(DEFAULT_CATEGORY);
     setRepeat(DEFAULT_REPEAT);
+    setSelectedTags([]);
+    setTagInput('');
+    setSelectedTagColor(TAG_COLORS[0]);
+  };
+
+  const addTag = () => {
+    const name = tagInput.trim();
+    if (!name) return;
+    if (selectedTags.find(t => t.name.toLowerCase() === name.toLowerCase())) return;
+    setSelectedTags(prev => [...prev, { id: Date.now().toString(), name, color: selectedTagColor }]);
+    setTagInput('');
+  };
+
+  const removeTag = (id: string) => {
+    setSelectedTags(prev => prev.filter(t => t.id !== id));
   };
 
   const saveTodosWithSideEffects = async (nextTodos: Todo[]) => {
@@ -257,6 +280,7 @@ const HomeScreen: React.FC<any> = () => {
               priority,
               category,
               repeat,
+              tags: selectedTags,
             })
           : todo,
       );
@@ -277,6 +301,7 @@ const HomeScreen: React.FC<any> = () => {
       priority,
       category,
       repeat,
+      tags: selectedTags,
     });
 
     await saveTodosWithSideEffects([...todos, newTodo]);
@@ -291,6 +316,7 @@ const HomeScreen: React.FC<any> = () => {
     setPriority(todo.priority || DEFAULT_PRIORITY);
     setCategory(todo.category || DEFAULT_CATEGORY);
     setRepeat(todo.repeat || DEFAULT_REPEAT);
+    setSelectedTags(todo.tags || []);
   };
 
   const deleteTodo = async (id: string) => {
@@ -430,6 +456,15 @@ const HomeScreen: React.FC<any> = () => {
             </Text>
             {hasReminder && (
               <Text style={{ color: theme.subText }}>Reminder scheduled</Text>
+            )}
+            {item.tags && item.tags.length > 0 && (
+              <View style={styles.tagRow}>
+                {item.tags.map(tag => (
+                  <View key={tag.id} style={[styles.tagBadge, { backgroundColor: tag.color }]}>
+                    <Text style={styles.tagBadgeText}>{tag.name}</Text>
+                  </View>
+                ))}
+              </View>
             )}
           </View>
 
@@ -634,6 +669,62 @@ const HomeScreen: React.FC<any> = () => {
           <Text style={{ color: theme.text }}>Cancel editing</Text>
         </TouchableOpacity>
       )}
+
+      {/* Tags Row */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
+        {selectedTags.map(tag => (
+          <TouchableOpacity
+            key={tag.id}
+            style={[styles.tagBadge, { backgroundColor: tag.color }]}
+            onPress={() => removeTag(tag.id)}
+          >
+            <Text style={styles.tagBadgeText}>{tag.name} ✕</Text>
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity
+          style={[styles.tagAddButton, { borderColor: theme.border }]}
+          onPress={() => setShowTagModal(true)}
+        >
+          <Icon name="pricetag-outline" size={14} color={theme.text} />
+          <Text style={{ color: theme.text, marginLeft: 4, fontSize: 13 }}>Tags</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Tag Modal */}
+      <Modal visible={showTagModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Add Tag</Text>
+
+            <View style={[styles.tagInputRow, { borderColor: theme.border, backgroundColor: theme.input }]}>
+              <TextInput
+                style={[styles.tagTextInput, { color: theme.text }]}
+                placeholder="Tag name..."
+                placeholderTextColor={theme.subText}
+                value={tagInput}
+                onChangeText={setTagInput}
+              />
+              <TouchableOpacity style={[styles.tagConfirmBtn, { backgroundColor: selectedTagColor }]} onPress={addTag}>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>Add</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.colorRow}>
+              {TAG_COLORS.map(color => (
+                <TouchableOpacity
+                  key={color}
+                  style={[styles.colorDot, { backgroundColor: color }, selectedTagColor === color && styles.colorDotSelected]}
+                  onPress={() => setSelectedTagColor(color)}
+                />
+              ))}
+            </View>
+
+            <TouchableOpacity style={styles.modalClose} onPress={() => setShowTagModal(false)}>
+              <Text style={{ color: theme.text, fontWeight: '600' }}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <View style={{ flexDirection: 'row', marginBottom: 10 }}>
         <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
@@ -843,5 +934,84 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 40,
     fontSize: 14,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 6,
+  },
+  tagBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginRight: 6,
+    marginBottom: 4,
+  },
+  tagBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  tagAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  tagInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 16,
+  },
+  tagTextInput: {
+    flex: 1,
+    paddingVertical: 10,
+  },
+  tagConfirmBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  colorRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 20,
+  },
+  colorDot: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 10,
+    marginBottom: 10,
+  },
+  colorDotSelected: {
+    borderWidth: 3,
+    borderColor: '#000',
+  },
+  modalClose: {
+    alignItems: 'center',
+    paddingVertical: 12,
   },
 });

@@ -13,7 +13,7 @@ const SplashScreen = ({ navigation }: any) => {
             navigation.replace("AuthLanding");    
         }
         else if (loggedIn === "true") {
-            navigation.replace("HomeScreen");
+            navigation.replace("Home");
         }
         else {
             navigation.replace("Login");

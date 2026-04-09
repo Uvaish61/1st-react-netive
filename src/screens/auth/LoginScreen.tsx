@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/Ionicons";
 
 const LoginScreen = ({ navigation }: any) => {
@@ -25,19 +26,18 @@ const LoginScreen = ({ navigation }: any) => {
         });
 
         const data = await response.json();
-        
-if (!response.ok) {
-Alert.alert("Login Failed", "Token not received from server");
-return;
-}
-const token = data?.token;
-        if (!token) {
+
+        if (!response.ok || !data?.token) {
             Alert.alert("Login Failed", data?.message || "Invalid credentials");
             return;
         }
 
+        const token = data.token;
+        await AsyncStorage.setItem("userAccount", JSON.stringify({ email, token }));
+        await AsyncStorage.setItem("isLoggedIn", "true");
+
         Alert.alert("Success", "Login successful");
-        navigation.replace("Home",{token});
+        navigation.replace("Home", { token });
     } catch (error) {
         Alert.alert("Network Error", "Could not connect to server");
     }

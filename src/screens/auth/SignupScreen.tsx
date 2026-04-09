@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/Ionicons";
 
-const SignScreen = ({ navigation } : any) => {
+const SignupScreen = ({ navigation } : any) => {
 
 
   const [username, setUsername] = useState("");
@@ -10,6 +11,10 @@ const SignScreen = ({ navigation } : any) => {
   const [password, setPassword] = useState("");
 
   const handleSignup = async () => {
+  if (!username || !email || !password) {
+    Alert.alert("Missing Fields", "Please enter username, email and password");
+    return;
+  }
   try {
     const response = await fetch("http://10.0.2.2:5000/api/auth/signup", {
       method: "POST",
@@ -30,6 +35,8 @@ const SignScreen = ({ navigation } : any) => {
       return;
     }
 
+    await AsyncStorage.setItem("userAccount", JSON.stringify({ username, email }));
+    await AsyncStorage.setItem("isLoggedIn", "true");
     Alert.alert("Success", "Account created successfully");
     navigation.replace("Home");
   } catch (error) {
@@ -95,4 +102,4 @@ const SignScreen = ({ navigation } : any) => {
   );
 };
 
-export default SignScreen;
+export default SignupScreen;

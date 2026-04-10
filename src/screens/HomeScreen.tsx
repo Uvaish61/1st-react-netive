@@ -560,6 +560,14 @@ const HomeScreen: React.FC<any> = () => {
         </Text>
       </TouchableOpacity>
 
+      {selectionMode && (
+        <View style={[styles.selectionBar, { backgroundColor: theme.card }]}>
+          <Text style={[styles.selectionCount, { color: theme.text }]}>
+            {selectedIds.length} selected
+          </Text>
+        </View>
+      )}
+
       <Text style={[styles.title, { color: theme.text }]}>My Task</Text>
 
       <View style={styles.summaryRow}>
@@ -1124,6 +1132,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
     gap: 6,
+  },
+  selectionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  selectionCount: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   todoItemSelected: {
     borderLeftWidth: 3,

@@ -191,6 +191,16 @@ const HomeScreen: React.FC<any> = () => {
     setSelectedIds(listData.map(t => t.id));
   };
 
+  const bulkComplete = async () => {
+    const updated = todos.map(todo =>
+      selectedIds.includes(todo.id) && !todo.completed
+        ? normalizeTodo({ ...todo, completed: true, completedAt: new Date().toISOString(), status: 'completed' })
+        : todo,
+    );
+    await saveTodosWithSideEffects(updated);
+    exitSelectionMode();
+  };
+
   const saveTodosWithSideEffects = async (nextTodos: Todo[]) => {
     setTodos(nextTodos);
     await saveTodo(nextTodos);
@@ -892,6 +902,10 @@ const HomeScreen: React.FC<any> = () => {
 
       {selectionMode && selectedIds.length > 0 && (
         <View style={[styles.bulkActionBar, { backgroundColor: theme.card }]}>
+          <TouchableOpacity style={[styles.bulkBtn, { backgroundColor: '#4CAF50' }]} onPress={bulkComplete}>
+            <Icon name="checkmark-circle-outline" size={18} color="#fff" />
+            <Text style={styles.bulkBtnText}>Complete All</Text>
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -1191,5 +1205,18 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 14,
     marginTop: 8,
+  },
+  bulkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  bulkBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

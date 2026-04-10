@@ -187,6 +187,10 @@ const HomeScreen: React.FC<any> = () => {
     setSelectedIds([]);
   };
 
+  const selectAll = () => {
+    setSelectedIds(listData.map(t => t.id));
+  };
+
   const saveTodosWithSideEffects = async (nextTodos: Todo[]) => {
     setTodos(nextTodos);
     await saveTodo(nextTodos);
@@ -565,6 +569,10 @@ const HomeScreen: React.FC<any> = () => {
           <Text style={[styles.selectionCount, { color: theme.text }]}>
             {selectedIds.length} selected
           </Text>
+          <TouchableOpacity style={styles.selectionBarBtn} onPress={selectAll}>
+            <Icon name="checkmark-done-outline" size={16} color={theme.text} />
+            <Text style={[styles.selectionBarBtnText, { color: theme.text }]}>Select All</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -1142,6 +1150,19 @@ const styles = StyleSheet.create({
   },
   selectionCount: {
     fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+  },
+  selectionBarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  selectionBarBtnText: {
+    fontSize: 13,
     fontWeight: '600',
   },
   todoItemSelected: {

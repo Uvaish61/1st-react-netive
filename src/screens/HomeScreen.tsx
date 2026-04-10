@@ -201,6 +201,25 @@ const HomeScreen: React.FC<any> = () => {
     exitSelectionMode();
   };
 
+  const bulkDelete = () => {
+    Alert.alert(
+      'Delete Tasks',
+      `Are you sure you want to delete ${selectedIds.length} task(s)?`,
+      [
+        { text: 'Cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const updated = todos.filter(todo => !selectedIds.includes(todo.id));
+            await saveTodosWithSideEffects(updated);
+            exitSelectionMode();
+          },
+        },
+      ],
+    );
+  };
+
   const saveTodosWithSideEffects = async (nextTodos: Todo[]) => {
     setTodos(nextTodos);
     await saveTodo(nextTodos);
@@ -905,6 +924,10 @@ const HomeScreen: React.FC<any> = () => {
           <TouchableOpacity style={[styles.bulkBtn, { backgroundColor: '#4CAF50' }]} onPress={bulkComplete}>
             <Icon name="checkmark-circle-outline" size={18} color="#fff" />
             <Text style={styles.bulkBtnText}>Complete All</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.bulkBtn, { backgroundColor: '#ef4444' }]} onPress={bulkDelete}>
+            <Icon name="trash-outline" size={18} color="#fff" />
+            <Text style={styles.bulkBtnText}>Delete All</Text>
           </TouchableOpacity>
         </View>
       )}

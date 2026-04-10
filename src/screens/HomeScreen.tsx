@@ -889,6 +889,11 @@ const HomeScreen: React.FC<any> = () => {
           ) : null
         }
       />
+
+      {selectionMode && selectedIds.length > 0 && (
+        <View style={[styles.bulkActionBar, { backgroundColor: theme.card }]}>
+        </View>
+      )}
     </View>
   );
 };
@@ -1178,5 +1183,13 @@ const styles = StyleSheet.create({
     borderColor: '#4CAF50',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  bulkActionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 14,
+    marginTop: 8,
   },
 });

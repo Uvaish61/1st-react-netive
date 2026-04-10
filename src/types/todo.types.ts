@@ -17,5 +17,6 @@ export interface Todo {
     repeat?: 'none' | 'daily' | 'weekly';
     completionType?: "early" | "ontime" | "late";
     tags?: Tag[];
+    notes?: string;
     }
     

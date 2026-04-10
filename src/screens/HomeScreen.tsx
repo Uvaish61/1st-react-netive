@@ -134,6 +134,9 @@ const HomeScreen: React.FC<any> = () => {
   const [showTagModal, setShowTagModal] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [selectedTagColor, setSelectedTagColor] = useState(TAG_COLORS[0]);
+  const [notes, setNotes] = useState('');
+  const [showNotesInput, setShowNotesInput] = useState(false);
+  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
 
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;
 
@@ -148,6 +151,8 @@ const HomeScreen: React.FC<any> = () => {
     setSelectedTags([]);
     setTagInput('');
     setSelectedTagColor(TAG_COLORS[0]);
+    setNotes('');
+    setShowNotesInput(false);
   };
 
   const addTag = () => {
@@ -281,6 +286,7 @@ const HomeScreen: React.FC<any> = () => {
               category,
               repeat,
               tags: selectedTags,
+              notes: notes.trim() || undefined,
             })
           : todo,
       );
@@ -302,6 +308,7 @@ const HomeScreen: React.FC<any> = () => {
       category,
       repeat,
       tags: selectedTags,
+      notes: notes.trim() || undefined,
     });
 
     await saveTodosWithSideEffects([...todos, newTodo]);
@@ -317,6 +324,8 @@ const HomeScreen: React.FC<any> = () => {
     setCategory(todo.category || DEFAULT_CATEGORY);
     setRepeat(todo.repeat || DEFAULT_REPEAT);
     setSelectedTags(todo.tags || []);
+    setNotes(todo.notes || '');
+    setShowNotesInput(!!todo.notes);
   };
 
   const deleteTodo = async (id: string) => {
@@ -465,6 +474,22 @@ const HomeScreen: React.FC<any> = () => {
                   </View>
                 ))}
               </View>
+            )}
+            {item.notes && (
+              <TouchableOpacity
+                onPress={() =>
+                  setExpandedNotes(prev => ({ ...prev, [item.id]: !prev[item.id] }))
+                }
+                style={styles.notesRow}
+              >
+                <Icon name="document-text-outline" size={13} color={theme.subText} />
+                <Text
+                  style={[styles.notesText, { color: theme.subText }]}
+                  numberOfLines={expandedNotes[item.id] ? undefined : 1}
+                >
+                  {item.notes}
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
 
@@ -668,6 +693,27 @@ const HomeScreen: React.FC<any> = () => {
         <TouchableOpacity style={styles.cancelEditButton} onPress={resetForm}>
           <Text style={{ color: theme.text }}>Cancel editing</Text>
         </TouchableOpacity>
+      )}
+
+      {/* Notes */}
+      <TouchableOpacity
+        style={styles.notesToggle}
+        onPress={() => setShowNotesInput(v => !v)}
+      >
+        <Icon name="document-text-outline" size={16} color={theme.subText} />
+        <Text style={{ color: theme.subText, fontSize: 13 }}>
+          {showNotesInput ? 'Hide note' : 'Add note'}
+        </Text>
+      </TouchableOpacity>
+      {showNotesInput && (
+        <TextInput
+          style={[styles.notesInput, { backgroundColor: theme.input, borderColor: theme.border, color: theme.text }]}
+          placeholder="Write a note..."
+          placeholderTextColor={theme.subText}
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+        />
       )}
 
       {/* Tags Row */}
@@ -1013,5 +1059,31 @@ const styles = StyleSheet.create({
   modalClose: {
     alignItems: 'center',
     paddingVertical: 12,
+  },
+  notesRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 6,
+    gap: 4,
+  },
+  notesText: {
+    flex: 1,
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  notesInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    fontSize: 13,
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  notesToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 6,
   },
 });

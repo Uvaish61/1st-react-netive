@@ -573,6 +573,10 @@ const HomeScreen: React.FC<any> = () => {
             <Icon name="checkmark-done-outline" size={16} color={theme.text} />
             <Text style={[styles.selectionBarBtnText, { color: theme.text }]}>Select All</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.selectionBarBtn} onPress={exitSelectionMode}>
+            <Icon name="close-outline" size={18} color={theme.text} />
+            <Text style={[styles.selectionBarBtnText, { color: theme.text }]}>Cancel</Text>
+          </TouchableOpacity>
         </View>
       )}
 

@@ -137,6 +137,8 @@ const HomeScreen: React.FC<any> = () => {
   const [notes, setNotes] = useState('');
   const [showNotesInput, setShowNotesInput] = useState(false);
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;
 
@@ -165,6 +167,24 @@ const HomeScreen: React.FC<any> = () => {
 
   const removeTag = (id: string) => {
     setSelectedTags(prev => prev.filter(t => t.id !== id));
+  };
+
+  const enterSelectionMode = (id: string) => {
+    setSelectionMode(true);
+    setSelectedIds([id]);
+  };
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      if (next.length === 0) setSelectionMode(false);
+      return next;
+    });
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedIds([]);
   };
 
   const saveTodosWithSideEffects = async (nextTodos: Todo[]) => {
@@ -436,9 +456,13 @@ const HomeScreen: React.FC<any> = () => {
     const anim = getAnimation(item.id);
     const currentStatus = getTodoStatus(item);
     const hasReminder = Boolean(item.dueDate && item.dueTime && !item.completed);
+    const isSelected = selectedIds.includes(item.id);
 
     return (
-      <Swipeable renderRightActions={() => renderRightActions(item.id)}>
+      <Swipeable
+        enabled={!selectionMode}
+        renderRightActions={() => renderRightActions(item.id)}
+      >
         <Animated.View
           style={[
             styles.todoItem,
@@ -447,12 +471,27 @@ const HomeScreen: React.FC<any> = () => {
               transform: [{ scale: anim }],
               opacity: anim,
             },
+            isSelected && styles.todoItemSelected,
           ]}
         >
           <TouchableOpacity
-            style={[styles.checkbox, item.completed && styles.checkboxChecked]}
-            onPress={() => toggleComplete(item.id)}
-          />
+            style={[
+              styles.checkbox,
+              selectionMode
+                ? isSelected
+                  ? styles.checkboxSelected
+                  : null
+                : item.completed && styles.checkboxChecked,
+            ]}
+            onPress={() =>
+              selectionMode ? toggleSelection(item.id) : toggleComplete(item.id)
+            }
+            onLongPress={() => enterSelectionMode(item.id)}
+          >
+            {selectionMode && isSelected && (
+              <Icon name="checkmark" size={12} color="#fff" />
+            )}
+          </TouchableOpacity>
 
           <View style={{ flex: 1 }}>
             <Text style={{ color: theme.text }}>{item.title}</Text>
@@ -1085,5 +1124,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
     gap: 6,
+  },
+  todoItemSelected: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
+  },
+  checkboxSelected: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

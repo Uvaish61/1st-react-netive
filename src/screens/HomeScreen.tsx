@@ -303,8 +303,8 @@ const HomeScreen: React.FC<any> = () => {
   );
 
   const activeTodos = useMemo(
-    () => filteredTodos.filter(todo => !todo.completed).sort(sortTodosByDueDate),
-    [filteredTodos],
+    () => filteredTodos.filter(todo => !todo.completed).sort((a, b) => sortTodos(a, b, sortBy)),
+    [filteredTodos, sortBy],
   );
 
   const completedTodos = useMemo(

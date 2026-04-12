@@ -998,10 +998,19 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginLeft: 8,
   },
+  filterRowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 12,
+  },
+  sortButton: {
+    padding: 8,
+    borderRadius: 8,
   },
   filterButton: {
     paddingHorizontal: 12,

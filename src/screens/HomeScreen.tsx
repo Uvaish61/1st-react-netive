@@ -26,6 +26,7 @@ type FilterType = 'all' | 'pending' | 'completed' | 'overdue';
 type PriorityType = 'High' | 'Medium' | 'Low';
 type CategoryType = 'Work' | 'Personal' | 'Study';
 type RepeatType = 'none' | 'daily' | 'weekly';
+type SortType = 'dueDate' | 'priority' | 'title' | 'createdAt';
 
 const DEFAULT_PRIORITY: PriorityType = 'Medium';
 const DEFAULT_CATEGORY: CategoryType = 'Personal';
@@ -139,6 +140,7 @@ const HomeScreen: React.FC<any> = () => {
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<SortType>('dueDate');
 
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;
 

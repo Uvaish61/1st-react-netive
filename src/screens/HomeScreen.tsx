@@ -98,6 +98,22 @@ const getNextRecurringDate = (todo: Todo) => {
   return nextDate.toISOString();
 };
 
+const PRIORITY_ORDER: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
+
+const sortTodos = (a: Todo, b: Todo, sortBy: SortType): number => {
+  switch (sortBy) {
+    case 'priority':
+      return (PRIORITY_ORDER[a.priority || 'Medium'] ?? 1) - (PRIORITY_ORDER[b.priority || 'Medium'] ?? 1);
+    case 'title':
+      return a.title.toLowerCase().localeCompare(b.title.toLowerCase());
+    case 'createdAt':
+      return Number(b.id) - Number(a.id);
+    case 'dueDate':
+    default:
+      return sortTodosByDueDate(a, b);
+  }
+};
+
 const sortTodosByDueDate = (left: Todo, right: Todo) => {
   const leftDueDate = getDueDateTime(left);
   const rightDueDate = getDueDateTime(right);

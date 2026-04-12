@@ -157,6 +157,7 @@ const HomeScreen: React.FC<any> = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortType>('dueDate');
+  const [showSortModal, setShowSortModal] = useState(false);
 
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;
 
@@ -664,32 +665,40 @@ const HomeScreen: React.FC<any> = () => {
         />
       </View>
 
-      <View style={styles.filterRow}>
-        {(['all', 'pending', 'completed', 'overdue'] as FilterType[]).map(filter => {
-          const isActive = activeFilter === filter;
+      <View style={styles.filterRowContainer}>
+        <View style={[styles.filterRow, { flex: 1 }]}>
+          {(['all', 'pending', 'completed', 'overdue'] as FilterType[]).map(filter => {
+            const isActive = activeFilter === filter;
 
-          return (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterButton,
-                {
-                  backgroundColor: isActive ? theme.filterActive : theme.filterBg,
-                },
-              ]}
-              onPress={() => setActiveFilter(filter)}
-            >
-              <Text
+            return (
+              <TouchableOpacity
+                key={filter}
                 style={[
-                  styles.filterText,
-                  { color: isActive ? '#FFFFFF' : theme.text },
+                  styles.filterButton,
+                  {
+                    backgroundColor: isActive ? theme.filterActive : theme.filterBg,
+                  },
                 ]}
+                onPress={() => setActiveFilter(filter)}
               >
-                {filter.charAt(0).toUpperCase() + filter.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+                <Text
+                  style={[
+                    styles.filterText,
+                    { color: isActive ? '#FFFFFF' : theme.text },
+                  ]}
+                >
+                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <TouchableOpacity
+          style={[styles.sortButton, { backgroundColor: theme.filterBg }]}
+          onPress={() => setShowSortModal(true)}
+        >
+          <Icon name="swap-vertical-outline" size={18} color={theme.text} />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.optionSection}>

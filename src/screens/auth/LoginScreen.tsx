@@ -1,20 +1,32 @@
 import React, { useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { Controller, useForm } from "react-hook-form";
 import AuthScreenLayout from "../../components/AuthScreenLayout";
 import { loginUser, persistSession } from "../../storage/auth.storage";
 
-const LoginScreen = ({ navigation }: any) => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+type LoginFormValues = {
+    email: string;
+    password: string;
+};
+
+const LoginScreen = ({ navigation, route }: any) => {
     const [showPassword, setShowPassword] = useState(false);
+    const {
+        control,
+        handleSubmit,
+        watch,
+        formState: { errors, isSubmitting },
+    } = useForm<LoginFormValues>({
+        defaultValues: {
+            email: route?.params?.email || "",
+            password: "",
+        },
+    });
 
-    const handleLogin = async () => {
-    if (!email || !password) {
-        Alert.alert("Missing Fields", "Please enter email and password");
-        return;
-    }
+    const emailValue = watch("email");
 
+    const handleLogin = async ({ email, password }: LoginFormValues) => {
     try {
         const result = await loginUser(email, password);
 
@@ -54,69 +66,98 @@ const LoginScreen = ({ navigation }: any) => {
             navigation={navigation}
         >
             <View style={styles.form}>
-                <View style={styles.inputCard}>
-                    <View style={styles.leadingIcon}>
-                        <Icon name="mail-outline" size={20} color="#6E9278" />
+                <View>
+                    <View style={[styles.inputCard, errors.email && styles.inputCardError]}>
+                        <View style={styles.leadingIcon}>
+                            <Icon name="mail-outline" size={20} color="#6E9278" />
+                        </View>
+                        <View style={styles.inputBody}>
+                            <Text style={styles.label}>Email Address</Text>
+                            <Controller
+                                control={control}
+                                name="email"
+                                rules={{
+                                    required: "Email is required",
+                                    pattern: {
+                                        value: /\S+@\S+\.\S+/,
+                                        message: "Enter a valid email address",
+                                    },
+                                }}
+                                render={({ field: { onChange, value } }) => (
+                                    <TextInput
+                                        placeholder="Enter your email"
+                                        placeholderTextColor="#98A2B3"
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        style={styles.input}
+                                    />
+                                )}
+                            />
+                        </View>
                     </View>
-                    <View style={styles.inputBody}>
-                        <Text style={styles.label}>Email Address</Text>
-                        <TextInput
-                            placeholder="Enter your email"
-                            placeholderTextColor="#98A2B3"
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            value={email}
-                            onChangeText={setEmail}
-                            style={styles.input}
-                        />
-                    </View>
+                    {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
                 </View>
 
-                <View style={styles.inputCard}>
-                    <View style={styles.leadingIcon}>
-                        <Icon name="lock-closed-outline" size={20} color="#6E9278" />
+                <View>
+                    <View style={[styles.inputCard, errors.password && styles.inputCardError]}>
+                        <View style={styles.leadingIcon}>
+                            <Icon name="lock-closed-outline" size={20} color="#6E9278" />
+                        </View>
+                        <View style={styles.inputBody}>
+                            <Text style={styles.label}>Password</Text>
+                            <Controller
+                                control={control}
+                                name="password"
+                                rules={{
+                                    required: "Password is required",
+                                }}
+                                render={({ field: { onChange, value } }) => (
+                                    <TextInput
+                                        placeholder="Enter your password"
+                                        placeholderTextColor="#98A2B3"
+                                        secureTextEntry={!showPassword}
+                                        value={value}
+                                        onChangeText={onChange}
+                                        style={styles.input}
+                                    />
+                                )}
+                            />
+                        </View>
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => setShowPassword(value => !value)}
+                            style={styles.trailingIcon}
+                        >
+                            <Icon
+                                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                size={22}
+                                color="#98A2B3"
+                            />
+                        </TouchableOpacity>
                     </View>
-                    <View style={styles.inputBody}>
-                        <Text style={styles.label}>Password</Text>
-                        <TextInput
-                            placeholder="Enter your password"
-                            placeholderTextColor="#98A2B3"
-                            secureTextEntry={!showPassword}
-                            value={password}
-                            onChangeText={setPassword}
-                            style={styles.input}
-                        />
-                    </View>
-                    <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={() => setShowPassword(value => !value)}
-                        style={styles.trailingIcon}
-                    >
-                        <Icon
-                            name={showPassword ? "eye-off-outline" : "eye-outline"}
-                            size={22}
-                            color="#98A2B3"
-                        />
-                    </TouchableOpacity>
+                    {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
                 </View>
 
                 <View style={styles.helperRow}>
                     <Text style={styles.helperText}>Local account login</Text>
                     <TouchableOpacity
                         activeOpacity={0.8}
-                        onPress={() => navigation.navigate("Signup", { email: email.trim() })}
+                        onPress={() => navigation.navigate("Signup", { email: emailValue.trim() })}
                     >
                         <Text style={styles.linkText}>Create Account</Text>
                     </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity
-                    onPress={handleLogin}
+                    onPress={handleSubmit(handleLogin)}
                     style={styles.primaryButton}
                     activeOpacity={0.9}
+                    disabled={isSubmitting}
                 >
                     <Text style={styles.primaryButtonText}>
-                        Login
+                        {isSubmitting ? "Logging in..." : "Login"}
                     </Text>
                 </TouchableOpacity>
 
@@ -129,7 +170,7 @@ const LoginScreen = ({ navigation }: any) => {
                 <TouchableOpacity
                     style={styles.secondaryButton}
                     activeOpacity={0.85}
-                    onPress={() => navigation.navigate("Signup", { email: email.trim() })}
+                    onPress={() => navigation.navigate("Signup", { email: emailValue.trim() })}
                 >
                     <Icon name="person-add-outline" size={18} color="#111315" />
                     <Text style={styles.secondaryButtonText}>Register New Account</Text>
@@ -177,9 +218,18 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         paddingVertical: 4,
     },
+    inputCardError: {
+        borderColor: "#E57373",
+    },
     trailingIcon: {
         paddingLeft: 12,
         paddingVertical: 8,
+    },
+    errorText: {
+        color: "#C62828",
+        fontSize: 12,
+        marginTop: 6,
+        marginLeft: 6,
     },
     helperRow: {
         flexDirection: "row",

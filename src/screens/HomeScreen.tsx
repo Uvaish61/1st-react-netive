@@ -703,7 +703,11 @@ const HomeScreen: React.FC<any> = () => {
           style={[styles.sortButton, { backgroundColor: theme.filterBg }]}
           onPress={() => setShowSortModal(true)}
         >
-          <Icon name="swap-vertical-outline" size={18} color={theme.text} />
+          <Icon
+            name={sortOrder === 'asc' ? 'arrow-up-outline' : 'arrow-down-outline'}
+            size={18}
+            color={theme.text}
+          />
         </TouchableOpacity>
       </View>
 
@@ -984,6 +988,19 @@ const HomeScreen: React.FC<any> = () => {
                 </TouchableOpacity>
               );
             })}
+            <TouchableOpacity
+              style={[styles.sortOrderToggle, { backgroundColor: theme.filterBg }]}
+              onPress={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
+            >
+              <Icon
+                name={sortOrder === 'asc' ? 'arrow-up-outline' : 'arrow-down-outline'}
+                size={16}
+                color={theme.text}
+              />
+              <Text style={[styles.sortOptionText, { color: theme.text }]}>
+                {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -1064,6 +1081,14 @@ const styles = StyleSheet.create({
   sortOptionText: {
     fontSize: 15,
     fontWeight: '500',
+  },
+  sortOrderToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
   },
   filterButton: {
     paddingHorizontal: 12,

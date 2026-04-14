@@ -162,6 +162,7 @@ const HomeScreen: React.FC<any> = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortType>('dueDate');
+  const [showStatsModal, setShowStatsModal] = useState(false);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showSortModal, setShowSortModal] = useState(false);
 
@@ -609,14 +610,20 @@ const HomeScreen: React.FC<any> = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <TouchableOpacity
-        style={{ alignSelf: 'flex-end', marginBottom: 10 }}
-        onPress={() => setDarkMode(!darkMode)}
-      >
-        <Text style={{ color: theme.text }}>
-          {darkMode ? 'Light' : 'Dark'}
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          style={[styles.topBarBtn, { backgroundColor: theme.card }]}
+          onPress={() => setShowStatsModal(true)}
+        >
+          <Icon name="bar-chart-outline" size={18} color={theme.text} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.topBarBtn, { backgroundColor: theme.card }]}
+          onPress={() => setDarkMode(!darkMode)}
+        >
+          <Icon name={darkMode ? 'sunny-outline' : 'moon-outline'} size={18} color={theme.text} />
+        </TouchableOpacity>
+      </View>
 
       {selectionMode && (
         <View style={[styles.selectionBar, { backgroundColor: theme.card }]}>
@@ -1025,6 +1032,16 @@ export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginBottom: 10,
+  },
+  topBarBtn: {
+    padding: 8,
+    borderRadius: 10,
+  },
   title: { fontSize: 28, fontWeight: 'bold', marginBottom: 20 },
   summaryRow: {
     flexDirection: 'row',

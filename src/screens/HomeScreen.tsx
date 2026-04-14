@@ -100,18 +100,23 @@ const getNextRecurringDate = (todo: Todo) => {
 
 const PRIORITY_ORDER: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
 
-const sortTodos = (a: Todo, b: Todo, sortBy: SortType): number => {
+const sortTodos = (a: Todo, b: Todo, sortBy: SortType, sortOrder: 'asc' | 'desc'): number => {
+  let result: number;
   switch (sortBy) {
     case 'priority':
-      return (PRIORITY_ORDER[a.priority || 'Medium'] ?? 1) - (PRIORITY_ORDER[b.priority || 'Medium'] ?? 1);
+      result = (PRIORITY_ORDER[a.priority || 'Medium'] ?? 1) - (PRIORITY_ORDER[b.priority || 'Medium'] ?? 1);
+      break;
     case 'title':
-      return a.title.toLowerCase().localeCompare(b.title.toLowerCase());
+      result = a.title.toLowerCase().localeCompare(b.title.toLowerCase());
+      break;
     case 'createdAt':
-      return Number(b.id) - Number(a.id);
+      result = Number(b.id) - Number(a.id);
+      break;
     case 'dueDate':
     default:
-      return sortTodosByDueDate(a, b);
+      result = sortTodosByDueDate(a, b);
   }
+  return sortOrder === 'desc' ? -result : result;
 };
 
 const sortTodosByDueDate = (left: Todo, right: Todo) => {
@@ -305,8 +310,8 @@ const HomeScreen: React.FC<any> = () => {
   );
 
   const activeTodos = useMemo(
-    () => filteredTodos.filter(todo => !todo.completed).sort((a, b) => sortTodos(a, b, sortBy)),
-    [filteredTodos, sortBy],
+    () => filteredTodos.filter(todo => !todo.completed).sort((a, b) => sortTodos(a, b, sortBy, sortOrder)),
+    [filteredTodos, sortBy, sortOrder],
   );
 
   const completedTodos = useMemo(

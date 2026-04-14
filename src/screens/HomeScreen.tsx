@@ -958,16 +958,26 @@ const HomeScreen: React.FC<any> = () => {
                 { key: 'title', label: 'Title (A–Z)', icon: 'text-outline' },
                 { key: 'createdAt', label: 'Created Date', icon: 'time-outline' },
               ] as { key: SortType; label: string; icon: string }[]
-            ).map(option => (
-              <TouchableOpacity
-                key={option.key}
-                style={[styles.sortOption, { borderBottomColor: theme.border }]}
-                onPress={() => { setSortBy(option.key); setShowSortModal(false); }}
-              >
-                <Icon name={option.icon} size={18} color={theme.text} />
-                <Text style={[styles.sortOptionText, { color: theme.text }]}>{option.label}</Text>
-              </TouchableOpacity>
-            ))}
+            ).map(option => {
+              const isActive = sortBy === option.key;
+              return (
+                <TouchableOpacity
+                  key={option.key}
+                  style={[
+                    styles.sortOption,
+                    { borderBottomColor: theme.border },
+                    isActive && { backgroundColor: theme.filterBg, borderRadius: 8 },
+                  ]}
+                  onPress={() => { setSortBy(option.key); setShowSortModal(false); }}
+                >
+                  <Icon name={option.icon} size={18} color={isActive ? '#4CAF50' : theme.text} />
+                  <Text style={[styles.sortOptionText, { color: isActive ? '#4CAF50' : theme.text, fontWeight: isActive ? '700' : '500' }]}>
+                    {option.label}
+                  </Text>
+                  {isActive && <Icon name="checkmark-outline" size={18} color="#4CAF50" style={{ marginLeft: 'auto' }} />}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       </Modal>

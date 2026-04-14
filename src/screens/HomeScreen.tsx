@@ -157,6 +157,7 @@ const HomeScreen: React.FC<any> = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortType>('dueDate');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showSortModal, setShowSortModal] = useState(false);
 
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;

@@ -946,6 +946,32 @@ const HomeScreen: React.FC<any> = () => {
         }
       />
 
+      {/* Sort Modal */}
+      <Modal visible={showSortModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Sort By</Text>
+            {(
+              [
+                { key: 'dueDate', label: 'Due Date', icon: 'calendar-outline' },
+                { key: 'priority', label: 'Priority', icon: 'flag-outline' },
+                { key: 'title', label: 'Title (A–Z)', icon: 'text-outline' },
+                { key: 'createdAt', label: 'Created Date', icon: 'time-outline' },
+              ] as { key: SortType; label: string; icon: string }[]
+            ).map(option => (
+              <TouchableOpacity
+                key={option.key}
+                style={[styles.sortOption, { borderBottomColor: theme.border }]}
+                onPress={() => { setSortBy(option.key); setShowSortModal(false); }}
+              >
+                <Icon name={option.icon} size={18} color={theme.text} />
+                <Text style={[styles.sortOptionText, { color: theme.text }]}>{option.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </Modal>
+
       {selectionMode && selectedIds.length > 0 && (
         <View style={[styles.bulkActionBar, { backgroundColor: theme.card }]}>
           <TouchableOpacity style={[styles.bulkBtn, { backgroundColor: '#4CAF50' }]} onPress={bulkComplete}>
@@ -1011,6 +1037,17 @@ const styles = StyleSheet.create({
   sortButton: {
     padding: 8,
     borderRadius: 8,
+  },
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  sortOptionText: {
+    fontSize: 15,
+    fontWeight: '500',
   },
   filterButton: {
     paddingHorizontal: 12,

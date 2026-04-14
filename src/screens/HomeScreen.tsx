@@ -9,7 +9,6 @@ import {
   Alert,
   Animated,
   Modal,
-  ScrollView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -162,7 +161,6 @@ const HomeScreen: React.FC<any> = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortType>('dueDate');
-  const [showStatsModal, setShowStatsModal] = useState(false);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showSortModal, setShowSortModal] = useState(false);
 
@@ -613,7 +611,7 @@ const HomeScreen: React.FC<any> = () => {
       <View style={styles.topBar}>
         <TouchableOpacity
           style={[styles.topBarBtn, { backgroundColor: theme.card }]}
-          onPress={() => setShowStatsModal(true)}
+          onPress={() => Alert.alert('Task Stats', `Total: ${summary.total}\nPending: ${summary.pending}\nOverdue: ${summary.overdue}\nCompleted: ${summary.completed}`)}
         >
           <Icon name="bar-chart-outline" size={18} color={theme.text} />
         </TouchableOpacity>

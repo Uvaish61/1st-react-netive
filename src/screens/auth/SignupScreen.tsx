@@ -1,14 +1,16 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import AuthScreenLayout from "../../components/AuthScreenLayout";
+import { persistSession, registerUser } from "../../storage/auth.storage";
 
-const SignupScreen = ({ navigation } : any) => {
+const SignupScreen = ({ navigation, route } : any) => {
 
 
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(route?.params?.email || "");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSignup = async () => {
   if (!username || !email || !password) {
@@ -16,90 +18,191 @@ const SignupScreen = ({ navigation } : any) => {
     return;
   }
   try {
-    const response = await fetch("http://10.0.2.2:5000/api/auth/signup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username,
-        email,
-        password,
-      }),
+    const result = await registerUser({
+      username: username.trim(),
+      email,
+      password,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      Alert.alert("Signup Failed", data?.message || "Something went wrong");
+    if (!result.ok) {
+      Alert.alert("Signup Failed", result.message);
       return;
     }
 
-    await AsyncStorage.setItem("userAccount", JSON.stringify({ username, email }));
-    await AsyncStorage.setItem("isLoggedIn", "true");
+    await persistSession(result.user);
     Alert.alert("Success", "Account created successfully");
     navigation.replace("Home");
-  } catch (error) {
-    Alert.alert("Network Error", "Could not connect to server");
+  } catch {
+    Alert.alert("Signup Failed", "Could not create account in local storage");
   }
 };
   
 
 
   return (
-    <View className="flex-1 bg-white px-6 justify-center">
+    <AuthScreenLayout
+      activeTab="signup"
+      title="Create your account and start organizing"
+      subtitle="Register once and jump straight into your personalized local Todo workspace."
+      navigation={navigation}
+    >
+      <View style={styles.form}>
+        <View style={styles.inputCard}>
+          <View style={styles.leadingIcon}>
+            <Icon name="person-outline" size={20} color="#6E9278" />
+          </View>
+          <View style={styles.inputBody}>
+            <Text style={styles.label}>Username</Text>
+            <TextInput
+              placeholder="Choose a username"
+              placeholderTextColor="#98A2B3"
+              value={username}
+              onChangeText={setUsername}
+              style={styles.input}
+            />
+          </View>
+        </View>
 
-      <Text className="text-3xl font-bold text-center mb-8">
-        Create Account
-      </Text>
+        <View style={styles.inputCard}>
+          <View style={styles.leadingIcon}>
+            <Icon name="mail-outline" size={20} color="#6E9278" />
+          </View>
+          <View style={styles.inputBody}>
+            <Text style={styles.label}>Email Address</Text>
+            <TextInput
+              placeholder="Enter your email"
+              placeholderTextColor="#98A2B3"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+              style={styles.input}
+            />
+          </View>
+        </View>
 
-      {/* Name Input */}
-      <View className="flex-row items-center border border-black rounded-lg px-3 mb-4">
-        <Icon name="person-outline" size={20} color="black" />
-        <TextInput
-          placeholder="Username"
-          value={username}
-          onChangeText={setUsername}
-          className="flex-1 ml-2 py-3"
-        />
+        <View style={styles.inputCard}>
+          <View style={styles.leadingIcon}>
+            <Icon name="lock-closed-outline" size={20} color="#6E9278" />
+          </View>
+          <View style={styles.inputBody}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              placeholder="Create a password"
+              placeholderTextColor="#98A2B3"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+              style={styles.input}
+            />
+          </View>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setShowPassword(value => !value)}
+            style={styles.trailingIcon}
+          >
+            <Icon
+              name={showPassword ? "eye-off-outline" : "eye-outline"}
+              size={22}
+              color="#98A2B3"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.helperRow}>
+          <Text style={styles.helperText}>Your account will stay on this device</Text>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate("Login")}>
+            <Text style={styles.linkText}>Have an account?</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          onPress={handleSignup}
+          style={styles.primaryButton}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.primaryButtonText}>
+            Create Account
+          </Text>
+        </TouchableOpacity>
       </View>
-
-      {/* Email Input */}
-      <View className="flex-row items-center border border-black rounded-lg px-3 mb-4">
-        <Icon name="mail-outline" size={20} color="black" />
-        <TextInput
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          className="flex-1 ml-2 py-3"
-        />
-      </View>
-
-      {/* Password Input */}
-      <View className="flex-row items-center border border-black rounded-lg px-3 mb-6">
-        <Icon name="lock-closed-outline" size={20} color="black" />
-        <TextInput
-          placeholder="Password"
-          placeholderTextColor="gray"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          className="flex-1 ml-2 py-3 text-black"
-          //hello 
-        />
-      </View>
-
-      {/* Create Account Button */}
-      <TouchableOpacity
-      onPress={handleSignup}
-      className="bg-black py-4 rounded-xl items-center">
-        <Text className="text-white text-lg font-semibold">
-          Create Account
-        </Text>
-      </TouchableOpacity>
-
-    </View>
+    </AuthScreenLayout>
   );
 };
+
+const styles = StyleSheet.create({
+  form: {
+    gap: 16,
+  },
+  inputCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E8EAED",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  leadingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: "#F2F7F3",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  inputBody: {
+    flex: 1,
+  },
+  label: {
+    fontSize: 13,
+    color: "#98A2B3",
+    marginBottom: 4,
+    fontWeight: "500",
+  },
+  input: {
+    color: "#111315",
+    fontSize: 18,
+    fontWeight: "600",
+    paddingVertical: 4,
+  },
+  trailingIcon: {
+    paddingLeft: 12,
+    paddingVertical: 8,
+  },
+  helperRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  helperText: {
+    color: "#667085",
+    fontSize: 14,
+    flex: 1,
+    marginRight: 12,
+  },
+  linkText: {
+    color: "#6E9278",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  primaryButton: {
+    backgroundColor: "#4CAF50",
+    borderRadius: 18,
+    paddingVertical: 18,
+    alignItems: "center",
+    justifyContent: "center",
+        marginTop: 4,
+  },
+  primaryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+});
 
 export default SignupScreen;

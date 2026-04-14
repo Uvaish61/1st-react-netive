@@ -21,7 +21,7 @@ const SplashScreen = ({ navigation }: any) => {
     }, 1500);
  }
  checkAuth();
-    }, []);
+    }, [navigation]);
     return (
         <View className="flex-1 items-center justify-center bg-white">
         <Text className="text-3xl font-bold mb-6">

@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 
@@ -83,7 +84,16 @@ const MetricBar: React.FC<MetricProps> = ({ label, value, color, delay }) => {
 
 const TaskStatsScreen: React.FC<any> = ({ navigation }) => {
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [displayRate, setDisplayRate] = useState(0);
   const { colors, isDark } = useAppTheme();
+
+  const ringScale = useSharedValue(0);
+  const ringOpacity = useSharedValue(0);
+
+  const ringAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: ringScale.value }],
+    opacity: ringOpacity.value,
+  }));
   const cardShadowStyle = {
     shadowColor: isDark ? '#000000' : '#0F172A',
     shadowOffset: { width: 0, height: 6 },
@@ -107,7 +117,12 @@ const TaskStatsScreen: React.FC<any> = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [loadData]),
+      // Ring entrance animation on every screen focus
+      ringScale.value = 0;
+      ringOpacity.value = 0;
+      ringScale.value = withDelay(150, withSpring(1, { damping: 10, stiffness: 90 }));
+      ringOpacity.value = withDelay(150, withTiming(1, { duration: 450 }));
+    }, [loadData, ringOpacity, ringScale]),
   );
 
   const stats = useMemo(() => {
@@ -131,6 +146,27 @@ const TaskStatsScreen: React.FC<any> = ({ navigation }) => {
     };
   }, [todos]);
 
+  // Animated counter: counts up from 0 → completionRate with ease-out
+  useEffect(() => {
+    setDisplayRate(0);
+    if (!stats.completionRate) {
+      return;
+    }
+    const steps = 40;
+    const intervalMs = 1000 / steps;
+    let step = 0;
+    const timer = setInterval(() => {
+      step += 1;
+      const eased = 1 - Math.pow(1 - step / steps, 3);
+      setDisplayRate(Math.round(stats.completionRate * eased));
+      if (step >= steps) {
+        clearInterval(timer);
+        setDisplayRate(stats.completionRate);
+      }
+    }, intervalMs);
+    return () => clearInterval(timer);
+  }, [stats.completionRate]);
+
   const cards = [
     { label: 'Total Tasks', value: stats.total, icon: 'albums-outline', color: '#60A5FA' },
     { label: 'Pending', value: stats.pending, icon: 'time-outline', color: '#F59E0B' },
@@ -153,14 +189,14 @@ const TaskStatsScreen: React.FC<any> = ({ navigation }) => {
         <Text style={[styles.heroTitle, { color: colors.text }]}>Performance Snapshot</Text>
         <Text style={[styles.heroSubTitle, { color: colors.subText }]}>Your productivity pattern in one view</Text>
 
-        <View style={styles.ringWrap}>
+        <Animated.View style={[styles.ringWrap, ringAnimStyle]}>
           <View style={[styles.ringOuter, { borderColor: colors.filterActive }]}>
             <View style={[styles.ringInner, { backgroundColor: colors.filterBg }]}>
-              <Text style={[styles.ringValue, { color: colors.text }]}>{stats.completionRate}%</Text>
+              <Text style={[styles.ringValue, { color: colors.text }]}>{displayRate}%</Text>
               <Text style={[styles.ringLabel, { color: colors.subText }]}>Completion</Text>
             </View>
           </View>
-        </View>
+        </Animated.View>
       </View>
 
       <View style={styles.grid}>

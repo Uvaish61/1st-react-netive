@@ -836,6 +836,69 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
         onCancel={() => setDeleteModal({ visible: false })}
         onConfirm={handleDeleteConfirm}
       />
+
+      {/* Notification Panel */}
+      <Modal visible={showNotifPanel} transparent animationType="slide">
+        <TouchableOpacity
+          style={styles.notifOverlay}
+          activeOpacity={1}
+          onPress={() => setShowNotifPanel(false)}
+        >
+          <View
+            style={[styles.notifSheet, { backgroundColor: theme.card, borderColor: theme.border }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={[styles.notifHandle, { backgroundColor: theme.border }]} />
+            <View style={styles.notifHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Icon name="notifications-outline" size={18} color={theme.text} />
+                <Text style={[styles.notifTitle, { color: theme.text }]}>Upcoming Tasks</Text>
+                {upcomingTasks.length > 0 && (
+                  <View style={styles.notifCountPill}>
+                    <Text style={styles.notifCountText}>{upcomingTasks.length}</Text>
+                  </View>
+                )}
+              </View>
+              <TouchableOpacity onPress={() => setShowNotifPanel(false)}>
+                <Icon name="close" size={20} color={theme.subText} />
+              </TouchableOpacity>
+            </View>
+
+            {upcomingTasks.length === 0 ? (
+              <View style={styles.notifEmpty}>
+                <Icon name="checkmark-circle-outline" size={44} color={theme.subText} />
+                <Text style={[styles.notifEmptyTitle, { color: theme.text }]}>Sab clear hai!</Text>
+                <Text style={[styles.notifEmptyText, { color: theme.subText }]}>Agle 1 ghante mein koi task due nahi</Text>
+              </View>
+            ) : (
+              upcomingTasks.map(task => {
+                const dt = getDueDateTime(task);
+                const diffMs = dt ? dt.getTime() - Date.now() : 0;
+                const diffMin = Math.max(0, Math.round(diffMs / 60000));
+                const priorityColor =
+                  task.priority === 'High' ? '#EF4444' :
+                  task.priority === 'Medium' ? '#F59E0B' : '#22C55E';
+                return (
+                  <View key={task.id} style={[styles.notifItem, { borderBottomColor: theme.border }]}>
+                    <View style={[styles.notifDot, { backgroundColor: priorityColor }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.notifItemTitle, { color: theme.text }]} numberOfLines={1}>
+                        {task.title}
+                      </Text>
+                      <Text style={[styles.notifItemMeta, { color: theme.subText }]}>
+                        {diffMin <= 5 ? '⚡ Abhi due!' : `${diffMin} min mein due`}
+                      </Text>
+                    </View>
+                    <View style={[styles.priorityPill, { backgroundColor: `${priorityColor}22` }]}>
+                      <Text style={[styles.priorityPillText, { color: priorityColor }]}>{task.priority}</Text>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
     </GestureHandlerRootView>
   );
@@ -1156,5 +1219,110 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 14,
+  },
+  bellWrapper: {
+    position: 'relative',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  bellBadgeText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  notifOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  notifSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    paddingBottom: 40,
+    maxHeight: '72%',
+  },
+  notifHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  notifHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  notifTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  notifCountPill: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  notifCountText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  notifEmpty: {
+    alignItems: 'center',
+    paddingVertical: 36,
+    gap: 8,
+  },
+  notifEmptyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  notifEmptyText: {
+    fontSize: 12,
+  },
+  notifItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    gap: 12,
+  },
+  notifDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  notifItemTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 3,
+  },
+  notifItemMeta: {
+    fontSize: 12,
+  },
+  priorityPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  priorityPillText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

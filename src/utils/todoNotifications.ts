@@ -28,6 +28,31 @@ const getReminderDateTime = (todo: Todo) => {
 };
 
 const getNotificationId = (todoId: string) => `todo-reminder-${todoId}`;
+const getWarningNotificationId = (todoId: string) => `todo-warning-${todoId}`;
+
+const getWarningDateTime = (todo: Todo) => {
+  if (!todo.dueDate || !todo.dueTime || todo.completed) {
+    return null;
+  }
+
+  const dueDateTime = new Date(todo.dueDate);
+  const dueTime = new Date(todo.dueTime);
+
+  dueDateTime.setHours(
+    dueTime.getHours(),
+    dueTime.getMinutes(),
+    dueTime.getSeconds(),
+    dueTime.getMilliseconds(),
+  );
+
+  const warningTime = new Date(dueDateTime.getTime() - 5 * 60 * 1000);
+
+  if (warningTime.getTime() <= Date.now() + 10000) {
+    return null;
+  }
+
+  return warningTime;
+};
 
 const ensureNotificationSetup = async () => {
   await notifee.requestPermission();
@@ -40,6 +65,40 @@ const ensureNotificationSetup = async () => {
 
 export const cancelTodoReminder = async (todoId: string) => {
   await notifee.cancelNotification(getNotificationId(todoId));
+  await notifee.cancelNotification(getWarningNotificationId(todoId));
+};
+
+const scheduleWarningReminder = async (todo: Todo) => {
+  const warningDateTime = getWarningDateTime(todo);
+  const notificationId = getWarningNotificationId(todo.id);
+
+  try {
+    await notifee.cancelNotification(notificationId);
+
+    if (!warningDateTime) {
+      return;
+    }
+
+    await ensureNotificationSetup();
+
+    await notifee.createTriggerNotification(
+      {
+        id: notificationId,
+        title: '⏰ Task Due Soon!',
+        body: `"${todo.title}" sirf 5 minute mein due hai!`,
+        android: {
+          channelId: TODO_CHANNEL_ID,
+          pressAction: { id: 'default' },
+        },
+      },
+      {
+        type: TriggerType.TIMESTAMP,
+        timestamp: warningDateTime.getTime(),
+      },
+    );
+  } catch {
+    // Silently skip
+  }
 };
 
 export const scheduleTodoReminder = async (todo: Todo) => {
@@ -78,5 +137,7 @@ export const scheduleTodoReminder = async (todo: Todo) => {
 };
 
 export const syncTodoReminders = async (todos: Todo[]) => {
-  await Promise.all(todos.map(todo => scheduleTodoReminder(todo)));
+  await Promise.all(
+    todos.flatMap(todo => [scheduleTodoReminder(todo), scheduleWarningReminder(todo)]),
+  );
 };

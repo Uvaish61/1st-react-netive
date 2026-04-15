@@ -598,25 +598,49 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
     <View style={[styles.container, { backgroundColor: theme.bg }]}> 
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={[styles.topBarBtn, { backgroundColor: theme.card }, pillShadowStyle]}
-          onPress={() => navigation.navigate('TaskStats')}
-        >
-          <Icon name="bar-chart-outline" size={18} color={theme.text} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.topBarBtn, { backgroundColor: theme.card }, pillShadowStyle]}
-          onPress={() => navigation.navigate('ProgressReport')}
-        >
-          <Icon name="analytics-outline" size={18} color={theme.text} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.topBarBtn, { backgroundColor: theme.card }, pillShadowStyle]}
-          onPress={toggleTheme}
-        >
-          <Icon name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={theme.text} />
-        </TouchableOpacity>
+      <View style={[styles.topBar, { justifyContent: 'space-between' }]}>
+        {/* Bell notification button */}
+        <View style={styles.bellWrapper}>
+          <TouchableOpacity
+            style={[styles.topBarBtn, { backgroundColor: theme.card }, pillShadowStyle]}
+            onPress={handleBellPress}
+          >
+            <Animated.View style={{ transform: [{ rotate: bellRotation }] }}>
+              <Icon
+                name={badgeCount > 0 ? 'notifications' : 'notifications-outline'}
+                size={18}
+                color={theme.text}
+              />
+            </Animated.View>
+          </TouchableOpacity>
+          {badgeCount > 0 && (
+            <View style={styles.bellBadge}>
+              <Text style={styles.bellBadgeText}>{badgeCount > 9 ? '9+' : String(badgeCount)}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Right action buttons */}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity
+            style={[styles.topBarBtn, { backgroundColor: theme.card }, pillShadowStyle]}
+            onPress={() => navigation.navigate('TaskStats')}
+          >
+            <Icon name="bar-chart-outline" size={18} color={theme.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.topBarBtn, { backgroundColor: theme.card }, pillShadowStyle]}
+            onPress={() => navigation.navigate('ProgressReport')}
+          >
+            <Icon name="analytics-outline" size={18} color={theme.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.topBarBtn, { backgroundColor: theme.card }, pillShadowStyle]}
+            onPress={toggleTheme}
+          >
+            <Icon name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={theme.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {selectionMode && (

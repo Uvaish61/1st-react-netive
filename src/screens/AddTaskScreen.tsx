@@ -230,7 +230,7 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
                 style={[styles.chip, { backgroundColor: isActive ? colors.filterActive : colors.filterBg }, pillShadowStyle, isActive && styles.chipActive]}
                 onPress={() => setRepeat(item)}
               >
-                <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                <Text style={[styles.chipText, { color: isActive ? '#FFFFFF' : colors.text }, isActive && styles.chipTextActive]}>
                   {item.charAt(0).toUpperCase() + item.slice(1)}
                 </Text>
               </TouchableOpacity>
@@ -251,7 +251,7 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
         ))}
 
         <TouchableOpacity style={[styles.tagAddButton, { backgroundColor: colors.filterBg }, pillShadowStyle]} onPress={() => setShowTagModal(true)}>
-          <Icon name="pricetag-outline" size={14} color="#FFFFFF" />
+          <Icon name="pricetag-outline" size={14} color={colors.text} />
           <Text style={[styles.tagAddText, { color: colors.text }]}>Tags</Text>
         </TouchableOpacity>
       </View>

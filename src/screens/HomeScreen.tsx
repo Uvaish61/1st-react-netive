@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   FlatList,
   Modal,
@@ -754,6 +753,14 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
       )}
 
       <BottomNavBar navigation={navigation} activeTab="Home" />
+
+      <DeleteConfirmModal
+        visible={deleteModal.visible}
+        title={deleteModal.bulk ? `Delete ${selectedIds.length} Task${selectedIds.length !== 1 ? 's' : ''}` : 'Delete Task'}
+        message={deleteModal.bulk ? 'All selected tasks will be permanently removed.' : 'This action cannot be undone.'}
+        onCancel={() => setDeleteModal({ visible: false })}
+        onConfirm={handleDeleteConfirm}
+      />
     </View>
     </GestureHandlerRootView>
   );
@@ -1007,7 +1014,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor:'rgba(239, 83, 80, 0.15)',
     justifyContent: 'flex-end',
   },
   modalCard: {

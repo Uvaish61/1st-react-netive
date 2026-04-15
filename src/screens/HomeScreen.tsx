@@ -18,6 +18,7 @@ import { Todo } from '../types/todo.types';
 import { loadTodos, saveTodo } from '../storage/todo.storage';
 import { cancelTodoReminder, syncTodoReminders } from '../utils/todoNotifications';
 import BottomNavBar from '../components/BottomNavBar';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import { useAppTheme } from '../contexts/ThemeContext';
 
 type FilterType = 'all' | 'pending' | 'completed' | 'overdue';
@@ -155,6 +156,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   const [sortBy, setSortBy] = useState<SortType>('dueDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showSortModal, setShowSortModal] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{ visible: boolean; id?: string; bulk?: boolean }>({ visible: false });
   const { isDark, colors, toggleTheme } = useAppTheme();
 
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;

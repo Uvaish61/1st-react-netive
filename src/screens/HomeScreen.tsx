@@ -157,9 +157,12 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showSortModal, setShowSortModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState<{ visible: boolean; id?: string; bulk?: boolean }>({ visible: false });
+  const [showNotifPanel, setShowNotifPanel] = useState(false);
+  const [newNotifCount, setNewNotifCount] = useState(0);
   const { isDark, colors, toggleTheme } = useAppTheme();
 
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;
+  const bellAnim = useRef(new Animated.Value(0)).current;
 
   const saveTodosWithSideEffects = async (nextTodos: Todo[]) => {
     const cleanedTodos = removeLegacyRecurringClones(nextTodos);

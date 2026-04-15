@@ -95,3 +95,75 @@ export const persistSession = async (user: Pick<StoredUser, 'username' | 'email'
   );
   await AsyncStorage.setItem(LOGGED_IN_STORAGE_KEY, 'true');
 };
+
+export const getSession = async (): Promise<{ username: string; email: string } | null> => {
+  try {
+    const raw = await AsyncStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+export const clearSession = async () => {
+  await AsyncStorage.removeItem(SESSION_STORAGE_KEY);
+  await AsyncStorage.setItem(LOGGED_IN_STORAGE_KEY, 'false');
+};
+
+export const updateSessionUsername = async (newUsername: string): Promise<void> => {
+  const session = await getSession();
+  if (!session) {
+    return;
+  }
+  await AsyncStorage.setItem(
+    SESSION_STORAGE_KEY,
+    JSON.stringify({ ...session, username: newUsername }),
+  );
+  const users = await loadUsers();
+  const updated = users.map(user =>
+    normalizeEmail(user.email) === normalizeEmail(session.email)
+      ? { ...user, username: newUsername }
+      : user,
+  );
+  await saveUsers(updated);
+};
+
+export const updatePassword = async (
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ ok: boolean; message: string }> => {
+  const session = await getSession();
+  if (!session) {
+    return { ok: false, message: 'Not logged in' };
+  }
+  const user = await findUserByEmail(session.email);
+  if (!user) {
+    return { ok: false, message: 'User not found' };
+  }
+  if (user.password !== currentPassword) {
+    return { ok: false, message: 'Current password is incorrect' };
+  }
+  const users = await loadUsers();
+  const updated = users.map(u =>
+    normalizeEmail(u.email) === normalizeEmail(session.email)
+      ? { ...u, password: newPassword }
+      : u,
+  );
+  await saveUsers(updated);
+  return { ok: true, message: 'Password updated' };
+};
+
+export const deleteAccount = async (): Promise<void> => {
+  const session = await getSession();
+  if (session) {
+    const users = await loadUsers();
+    const filtered = users.filter(
+      user => normalizeEmail(user.email) !== normalizeEmail(session.email),
+    );
+    await saveUsers(filtered);
+  }
+  await clearSession();
+};

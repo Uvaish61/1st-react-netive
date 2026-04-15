@@ -19,7 +19,8 @@ const getReminderDateTime = (todo: Todo) => {
     dueTime.getMilliseconds(),
   );
 
-  if (dueDateTime.getTime() <= Date.now()) {
+  // Require at least 10 seconds in the future to avoid race conditions
+  if (dueDateTime.getTime() <= Date.now() + 10000) {
     return null;
   }
 

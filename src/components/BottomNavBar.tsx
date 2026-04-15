@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useAppTheme } from '../contexts/ThemeContext';
 
-type TabKey = 'Home' | 'AddTask' | 'TaskStats' | 'ProgressReport';
+type TabKey = 'Home' | 'AddTask' | 'TaskStats' | 'ProgressReport' | 'Profile';
 
 type BottomNavBarProps = {
   navigation: any;
@@ -21,6 +21,7 @@ const TABS: Array<{ key: TabKey; label: string; icon: string }> = [
   { key: 'AddTask', label: 'Add Task', icon: 'add-circle-outline' },
   { key: 'TaskStats', label: 'Stats', icon: 'bar-chart-outline' },
   { key: 'ProgressReport', label: 'Progress', icon: 'analytics-outline' },
+  { key: 'Profile', label: 'Profile', icon: 'person-circle-outline' },
 ];
 
 const BottomNavItem: React.FC<{

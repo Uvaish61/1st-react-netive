@@ -119,7 +119,7 @@ const ProgressReportScreen: React.FC<any> = ({ navigation }) => {
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.headerRow}>
-        <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.card }, pillShadowStyle]} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.card }, pillShadowStyle]} onPress={() => navigation.navigate('Home')}>
           <Icon name="arrow-back" size={20} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Progress Report</Text>

@@ -12,6 +12,7 @@ import HomeScreen from "../screens/HomeScreen";
 import AddTaskScreen from "../screens/AddTaskScreen";
 import TaskStatsScreen from "../screens/TaskStatsScreen";
 import ProgressReportScreen from "../screens/ProgressReportScreen";
+import ProfileScreen from "../screens/ProfileScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -29,6 +30,7 @@ const AppNavigator = () => {
                     <Stack.Screen name="AddTask" component={AddTaskScreen} />
                     <Stack.Screen name="TaskStats" component={TaskStatsScreen} />
                     <Stack.Screen name="ProgressReport" component={ProgressReportScreen} />
+                    <Stack.Screen name="Profile" component={ProfileScreen} />
                 </Stack.Navigator>
             </NavigationContainer>
         </GestureHandlerRootView>

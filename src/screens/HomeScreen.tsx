@@ -283,6 +283,53 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     [filteredTodos],
   );
 
+  const upcomingTasks = useMemo(() => {
+    const now = Date.now();
+    const oneHour = 60 * 60 * 1000;
+    return activeTodos.filter(todo => {
+      const dt = getDueDateTime(todo);
+      if (!dt) { return false; }
+      const diff = dt.getTime() - now;
+      return diff > 0 && diff <= oneHour;
+    });
+  }, [activeTodos]);
+
+  const badgeCount = upcomingTasks.length + newNotifCount;
+
+  const bellRotation = bellAnim.interpolate({
+    inputRange: [-15, 15],
+    outputRange: ['-15deg', '15deg'],
+  });
+
+  const ringBell = useCallback(() => {
+    bellAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(bellAnim, { toValue: 15, duration: 60, useNativeDriver: true }),
+      Animated.timing(bellAnim, { toValue: -15, duration: 60, useNativeDriver: true }),
+      Animated.timing(bellAnim, { toValue: 10, duration: 55, useNativeDriver: true }),
+      Animated.timing(bellAnim, { toValue: -10, duration: 55, useNativeDriver: true }),
+      Animated.timing(bellAnim, { toValue: 5, duration: 50, useNativeDriver: true }),
+      Animated.timing(bellAnim, { toValue: 0, duration: 40, useNativeDriver: true }),
+    ]).start();
+  }, [bellAnim]);
+
+  const handleBellPress = useCallback(() => {
+    ringBell();
+    setNewNotifCount(0);
+    setShowNotifPanel(true);
+  }, [ringBell]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const unsubscribe = notifee.onForegroundEvent(({ type }) => {
+      if (type === EventType.DELIVERED) {
+        ringBell();
+        setNewNotifCount(prev => prev + 1);
+      }
+    });
+    return () => unsubscribe();
+  }, [ringBell]);
+
   const showCompletedSection = activeFilter === 'all';
   const listData = showCompletedSection ? activeTodos : filteredTodos.sort(sortTodosByDueDate);
 

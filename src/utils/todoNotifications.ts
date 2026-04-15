@@ -46,31 +46,35 @@ export const scheduleTodoReminder = async (todo: Todo) => {
   const reminderDateTime = getReminderDateTime(todo);
   const notificationId = getNotificationId(todo.id);
 
-  await notifee.cancelNotification(notificationId);
+  try {
+    await notifee.cancelNotification(notificationId);
 
-  if (!reminderDateTime) {
-    return;
-  }
+    if (!reminderDateTime) {
+      return;
+    }
 
-  await ensureNotificationSetup();
+    await ensureNotificationSetup();
 
-  await notifee.createTriggerNotification(
-    {
-      id: notificationId,
-      title: 'Task Reminder',
-      body: todo.title,
-      android: {
-        channelId: TODO_CHANNEL_ID,
-        pressAction: {
-          id: 'default',
+    await notifee.createTriggerNotification(
+      {
+        id: notificationId,
+        title: 'Task Reminder',
+        body: todo.title,
+        android: {
+          channelId: TODO_CHANNEL_ID,
+          pressAction: {
+            id: 'default',
+          },
         },
       },
-    },
-    {
-      type: TriggerType.TIMESTAMP,
-      timestamp: reminderDateTime.getTime(),
-    },
-  );
+      {
+        type: TriggerType.TIMESTAMP,
+        timestamp: reminderDateTime.getTime(),
+      },
+    );
+  } catch {
+    // Silently skip — timestamp may have just crossed into the past
+  }
 };
 
 export const syncTodoReminders = async (todos: Todo[]) => {

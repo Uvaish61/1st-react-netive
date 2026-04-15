@@ -331,10 +331,20 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   };
 
   const confirmDelete = (id: string) => {
-    Alert.alert('Delete Task', 'Are you sure?', [
-      { text: 'Cancel' },
-      { text: 'Delete', onPress: () => deleteTodo(id) },
-    ]);
+    setDeleteModal({ visible: true, id });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteModal.bulk) {
+      const updated = todos.filter(todo => !selectedIds.includes(todo.id));
+      setDeleteModal({ visible: false });
+      await saveTodosWithSideEffects(updated);
+      exitSelectionMode();
+    } else if (deleteModal.id) {
+      const id = deleteModal.id;
+      setDeleteModal({ visible: false });
+      await deleteTodo(id);
+    }
   };
 
   const toggleComplete = async (id: string) => {

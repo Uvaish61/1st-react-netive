@@ -11,13 +11,14 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Swipeable } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import { Todo } from '../types/todo.types';
 import { loadTodos, saveTodo } from '../storage/todo.storage';
 import { cancelTodoReminder, syncTodoReminders } from '../utils/todoNotifications';
-import MainScreensTabs from '../components/MainScreensTabs';
+import BottomNavBar from '../components/BottomNavBar';
+import { useAppTheme } from '../contexts/ThemeContext';
 
 type FilterType = 'all' | 'pending' | 'completed' | 'overdue';
 type CategoryType = 'Work' | 'Personal' | 'Study';
@@ -78,22 +79,6 @@ const normalizeTodo = (todo: Todo): Todo => ({
   status: todo.completed ? 'completed' : getTodoStatus(todo),
 });
 
-const getNextRecurringDate = (todo: Todo) => {
-  if (!todo.dueDate || !todo.repeat || todo.repeat === 'none') {
-    return null;
-  }
-
-  const nextDate = new Date(todo.dueDate);
-
-  if (todo.repeat === 'daily') {
-    nextDate.setDate(nextDate.getDate() + 1);
-  } else if (todo.repeat === 'weekly') {
-    nextDate.setDate(nextDate.getDate() + 7);
-  }
-
-  return nextDate.toISOString();
-};
-
 const sortTodosByDueDate = (left: Todo, right: Todo) => {
   const leftDueDate = getDueDateTime(left);
   const rightDueDate = getDueDateTime(right);
@@ -134,24 +119,51 @@ const sortTodos = (a: Todo, b: Todo, sortBy: SortType, sortOrder: 'asc' | 'desc'
   return sortOrder === 'desc' ? -result : result;
 };
 
+const removeLegacyRecurringClones = (items: Todo[]) => {
+  const byId = new Map(items.map(item => [item.id, item]));
+
+  return items.filter(item => {
+    const separatorIndex = item.id.indexOf('-');
+
+    if (separatorIndex <= 0) {
+      return true;
+    }
+
+    const parentId = item.id.slice(separatorIndex + 1);
+    const parent = byId.get(parentId);
+
+    if (!parent) {
+      return true;
+    }
+
+    // Cleanup old auto-generated next task created by previous completion logic.
+    const sameTitle = parent.title === item.title;
+    const parentCompleted = parent.completed;
+    const childPending = !item.completed;
+
+    return !(sameTitle && parentCompleted && childPending);
+  });
+};
+
 const HomeScreen: React.FC<any> = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [todos, setTodos] = useState<Todo[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-  const [darkMode, setDarkMode] = useState(true);
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortType>('dueDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showSortModal, setShowSortModal] = useState(false);
+  const { isDark, colors, toggleTheme } = useAppTheme();
 
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;
 
   const saveTodosWithSideEffects = async (nextTodos: Todo[]) => {
-    setTodos(nextTodos);
-    await saveTodo(nextTodos);
-    await syncTodoReminders(nextTodos);
+    const cleanedTodos = removeLegacyRecurringClones(nextTodos);
+    setTodos(cleanedTodos);
+    await saveTodo(cleanedTodos);
+    await syncTodoReminders(cleanedTodos);
   };
 
   const refreshStatuses = useCallback(async (sourceTodos?: Todo[]) => {
@@ -180,9 +192,15 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
 
   const reloadTodos = useCallback(async () => {
     const localTodos = await loadTodos();
-    const normalizedTodos = Array.isArray(localTodos)
-      ? localTodos.map(normalizeTodo)
+    const sanitizedTodos = Array.isArray(localTodos)
+      ? removeLegacyRecurringClones(localTodos)
       : [];
+
+    const normalizedTodos = sanitizedTodos.map(normalizeTodo);
+
+    if (Array.isArray(localTodos) && sanitizedTodos.length !== localTodos.length) {
+      await saveTodo(normalizedTodos);
+    }
 
     await refreshStatuses(normalizedTodos);
   }, [refreshStatuses]);
@@ -363,29 +381,6 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
       });
     });
 
-    const completedTodo = updatedTodos.find(todo => todo.id === id);
-
-    if (
-      completedTodo?.completed &&
-      completedTodo.repeat &&
-      completedTodo.repeat !== 'none'
-    ) {
-      const nextDueDate = getNextRecurringDate(completedTodo);
-
-      if (nextDueDate) {
-        updatedTodos.push(
-          normalizeTodo({
-            ...completedTodo,
-            id: `${Date.now()}-${completedTodo.id}`,
-            completed: false,
-            completedAt: null,
-            dueDate: nextDueDate,
-            status: 'pending',
-          }),
-        );
-      }
-    }
-
     await saveTodosWithSideEffects(updatedTodos);
   };
 
@@ -395,33 +390,60 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  const theme = darkMode
-    ? {
-        bg: '#0F1013',
-        card: '#181B20',
-        text: '#FFFFFF',
-        subText: '#B8BFCC',
-        input: '#232730',
-        border: '#2E333D',
-        filterBg: '#232730',
-        filterActive: '#4CAF50',
-      }
-    : {
-        bg: '#F2F4F8',
-        card: '#FFFFFF',
-        text: '#0F172A',
-        subText: '#64748B',
-        input: '#FFFFFF',
-        border: '#E2E8F0',
-        filterBg: '#E8EDF5',
-        filterActive: '#4CAF50',
-      };
+  const theme = colors;
+  const cardShadowStyle = {
+    shadowColor: isDark ? '#000000' : '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: isDark ? 0.32 : 0.14,
+    shadowRadius: 10,
+    elevation: isDark ? 8 : 5,
+  };
+  const pillShadowStyle = {
+    shadowColor: isDark ? '#000000' : '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: isDark ? 0.24 : 0.1,
+    shadowRadius: 6,
+    elevation: isDark ? 4 : 3,
+  };
+  const todoCardShadowStyle = {
+    shadowColor: isDark ? '#000000' : '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: isDark ? 0.34 : 0.16,
+    shadowRadius: 12,
+    elevation: isDark ? 10 : 6,
+  };
 
   const renderTodoItem = ({ item }: { item: Todo }) => {
     const anim = getAnimation(item.id);
     const currentStatus = getTodoStatus(item);
     const hasReminder = Boolean(item.dueDate && item.dueTime && !item.completed);
     const isSelected = selectedIds.includes(item.id);
+    const statusRailBg =
+      currentStatus === 'completed'
+        ? isDark
+          ? '#1F3B2A'
+          : '#DCFCE7'
+        : currentStatus === 'overdue'
+          ? isDark
+            ? '#3F2326'
+            : '#FEE2E2'
+          : isDark
+            ? '#27303C'
+            : '#E2E8F0';
+    const statusRailText =
+      currentStatus === 'completed'
+        ? '#22C55E'
+        : currentStatus === 'overdue'
+          ? '#EF4444'
+          : isDark
+            ? '#94A3B8'
+            : '#475569';
+    const statusIcon =
+      currentStatus === 'completed'
+        ? 'checkmark-done-outline'
+        : currentStatus === 'overdue'
+          ? 'alert-circle-outline'
+          : 'time-outline';
 
     return (
       <Swipeable enabled={!selectionMode} renderRightActions={() => renderRightActions(item.id)}>
@@ -433,76 +455,93 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
               transform: [{ scale: anim }],
               opacity: anim,
             },
+            todoCardShadowStyle,
             isSelected && styles.todoItemSelected,
           ]}
         >
-          <TouchableOpacity
-            style={[
-              styles.checkbox,
-              selectionMode
-                ? isSelected
-                  ? styles.checkboxSelected
-                  : null
-                : item.completed && styles.checkboxChecked,
-            ]}
-            onPress={() =>
-              selectionMode ? toggleSelection(item.id) : toggleComplete(item.id)
-            }
-            onLongPress={() => enterSelectionMode(item.id)}
-          >
-            {selectionMode && isSelected && (
-              <Icon name="checkmark" size={12} color="#fff" />
-            )}
-          </TouchableOpacity>
+          <View style={styles.todoMainContent}>
+            <TouchableOpacity
+              style={[
+                styles.checkbox,
+                selectionMode
+                  ? isSelected
+                    ? styles.checkboxSelected
+                    : null
+                  : item.completed && styles.checkboxChecked,
+              ]}
+              onPress={() =>
+                selectionMode ? toggleSelection(item.id) : toggleComplete(item.id)
+              }
+              onLongPress={() => enterSelectionMode(item.id)}
+            >
+              {selectionMode && isSelected && (
+                <Icon name="checkmark" size={12} color="#fff" />
+              )}
+            </TouchableOpacity>
 
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.todoTitle, { color: theme.text }]}>{item.title}</Text>
-            <Text style={{ color: theme.subText }}>Status: {currentStatus}</Text>
-            <Text style={{ color: theme.subText }}>
-              Priority: {item.priority || DEFAULT_PRIORITY} | Category: {item.category || DEFAULT_CATEGORY}
-            </Text>
-            <Text style={{ color: theme.subText }}>
-              Repeat: {item.repeat || DEFAULT_REPEAT}
-            </Text>
-            {hasReminder && <Text style={{ color: theme.subText }}>Reminder scheduled</Text>}
-            {item.tags && item.tags.length > 0 && (
-              <View style={styles.tagRow}>
-                {item.tags.map(tag => (
-                  <View key={tag.id} style={[styles.tagBadge, { backgroundColor: tag.color }]}>
-                    <Text style={styles.tagBadgeText}>{tag.name}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-            {item.notes && (
-              <TouchableOpacity
-                onPress={() =>
-                  setExpandedNotes(prev => ({ ...prev, [item.id]: !prev[item.id] }))
-                }
-                style={styles.notesRow}
-              >
-                <Icon name="document-text-outline" size={13} color={theme.subText} />
-                <Text
-                  style={[styles.notesText, { color: theme.subText }]}
-                  numberOfLines={expandedNotes[item.id] ? undefined : 1}
-                >
-                  {item.notes}
+            <View style={styles.todoBody}>
+              <View style={styles.todoHeaderRow}>
+                <Text style={[styles.todoTitle, { color: theme.text }]} numberOfLines={1}>
+                  {item.title}
                 </Text>
-              </TouchableOpacity>
-            )}
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={[styles.iconButton, { backgroundColor: theme.filterBg }]}
+                    onPress={() => navigation.navigate('AddTask', { mode: 'edit', todo: item })}
+                  >
+                    <Icon name="create-outline" size={16} color={theme.text} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.iconButton, { backgroundColor: theme.filterBg }]}
+                    onPress={() => confirmDelete(item.id)}
+                  >
+                    <Icon name="trash-outline" size={16} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <Text style={[styles.todoMeta, { color: theme.subText }]}>Status: {currentStatus}</Text>
+              <Text style={[styles.todoMeta, { color: theme.subText }]}>
+                Priority: {item.priority || DEFAULT_PRIORITY} | Category: {item.category || DEFAULT_CATEGORY}
+              </Text>
+              <Text style={[styles.todoMeta, { color: theme.subText }]}>Repeat: {item.repeat || DEFAULT_REPEAT}</Text>
+              {hasReminder && <Text style={[styles.todoMeta, { color: theme.subText }]}>Reminder scheduled</Text>}
+
+              {item.tags && item.tags.length > 0 && (
+                <View style={styles.tagRow}>
+                  {item.tags.map(tag => (
+                    <View key={tag.id} style={[styles.tagBadge, { backgroundColor: tag.color }]}>
+                      <Text style={styles.tagBadgeText}>{tag.name}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {item.notes && (
+                <TouchableOpacity
+                  onPress={() =>
+                    setExpandedNotes(prev => ({ ...prev, [item.id]: !prev[item.id] }))
+                  }
+                  style={styles.notesRow}
+                >
+                  <Icon name="document-text-outline" size={13} color={theme.subText} />
+                  <Text
+                    style={[styles.notesText, { color: theme.subText }]}
+                    numberOfLines={expandedNotes[item.id] ? undefined : 1}
+                  >
+                    {item.notes}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => navigation.navigate('AddTask', { mode: 'edit', todo: item })}
-            >
-              <Icon name="create-outline" size={18} color={theme.text} />
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => confirmDelete(item.id)}>
-              <Icon name="trash-outline" size={18} color="#ef4444" />
-            </TouchableOpacity>
+          <View style={[styles.statusRail, { backgroundColor: statusRailBg }]}>
+            <Icon name={statusIcon} size={20} color={statusRailText} />
+            <Text style={[styles.statusRailLabel, { color: statusRailText }]}>
+              {currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
+            </Text>
           </View>
         </Animated.View>
       </Swipeable>
@@ -510,25 +549,26 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   };
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <View style={[styles.container, { backgroundColor: theme.bg }]}> 
       <View style={styles.topBar}>
         <TouchableOpacity
-          style={[styles.topBarBtn, { backgroundColor: theme.card }]}
+          style={[styles.topBarBtn, { backgroundColor: theme.card }, pillShadowStyle]}
           onPress={() => navigation.navigate('TaskStats')}
         >
           <Icon name="bar-chart-outline" size={18} color={theme.text} />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.topBarBtn, { backgroundColor: theme.card }]}
+          style={[styles.topBarBtn, { backgroundColor: theme.card }, pillShadowStyle]}
           onPress={() => navigation.navigate('ProgressReport')}
         >
           <Icon name="analytics-outline" size={18} color={theme.text} />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.topBarBtn, { backgroundColor: theme.card }]}
-          onPress={() => setDarkMode(!darkMode)}
+          style={[styles.topBarBtn, { backgroundColor: theme.card }, pillShadowStyle]}
+          onPress={toggleTheme}
         >
-          <Icon name={darkMode ? 'sunny-outline' : 'moon-outline'} size={18} color={theme.text} />
+          <Icon name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={theme.text} />
         </TouchableOpacity>
       </View>
 
@@ -550,9 +590,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
 
       <Text style={[styles.title, { color: theme.text }]}>My Task</Text>
 
-      <MainScreensTabs navigation={navigation} activeTab="Home" />
-
-      <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: theme.border }]}> 
+      <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: theme.border }, cardShadowStyle]}> 
         <View>
           <Text style={[styles.heroTitle, { color: theme.text }]}>Focus Dashboard</Text>
           <Text style={[styles.heroSubText, { color: theme.subText }]}>Today completion: {completionRate}%</Text>
@@ -564,25 +602,25 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
       </View>
 
       <View style={styles.summaryRow}>
-        <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
+        <View style={[styles.summaryCard, { backgroundColor: theme.card }, cardShadowStyle]}>
           <Text style={[styles.summaryCount, { color: theme.text }]}>{summary.total}</Text>
           <Text style={[styles.summaryLabel, { color: theme.subText }]}>Total</Text>
         </View>
-        <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
+        <View style={[styles.summaryCard, { backgroundColor: theme.card }, cardShadowStyle]}>
           <Text style={[styles.summaryCount, { color: theme.text }]}>{summary.pending}</Text>
           <Text style={[styles.summaryLabel, { color: theme.subText }]}>Pending</Text>
         </View>
-        <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
+        <View style={[styles.summaryCard, { backgroundColor: theme.card }, cardShadowStyle]}>
           <Text style={[styles.summaryCount, { color: theme.text }]}>{summary.completed}</Text>
           <Text style={[styles.summaryLabel, { color: theme.subText }]}>Completed</Text>
         </View>
-        <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
+        <View style={[styles.summaryCard, { backgroundColor: theme.card }, cardShadowStyle]}>
           <Text style={[styles.summaryCount, { color: theme.text }]}>{summary.overdue}</Text>
           <Text style={[styles.summaryLabel, { color: theme.subText }]}>Overdue</Text>
         </View>
       </View>
 
-      <View style={[styles.searchContainer, { backgroundColor: theme.input, borderColor: theme.border }]}> 
+      <View style={[styles.searchContainer, { backgroundColor: theme.input, borderColor: theme.border }, cardShadowStyle]}> 
         <Icon name="search-outline" size={18} color={theme.subText} />
         <TextInput
           style={[styles.searchInput, { color: theme.text }]}
@@ -603,6 +641,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
                 key={filter}
                 style={[
                   styles.filterButton,
+                  pillShadowStyle,
                   {
                     backgroundColor: isActive ? theme.filterActive : theme.filterBg,
                   },
@@ -617,7 +656,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
           })}
         </View>
         <TouchableOpacity
-          style={[styles.sortButton, { backgroundColor: theme.filterBg }]}
+          style={[styles.sortButton, { backgroundColor: theme.filterBg }, pillShadowStyle]}
           onPress={() => setShowSortModal(true)}
         >
           <Icon
@@ -649,7 +688,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
 
       <Modal visible={showSortModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: theme.card }]}> 
+          <View style={[styles.modalCard, { backgroundColor: theme.card }, cardShadowStyle]}> 
             <Text style={[styles.modalTitle, { color: theme.text }]}>Sort By</Text>
             {(
               [
@@ -705,7 +744,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
       </Modal>
 
       {selectionMode && selectedIds.length > 0 && (
-        <View style={[styles.bulkActionBar, { backgroundColor: theme.card }]}> 
+        <View style={[styles.bulkActionBar, { backgroundColor: theme.card }, cardShadowStyle]}> 
           <TouchableOpacity style={[styles.bulkBtn, { backgroundColor: '#4CAF50' }]} onPress={bulkComplete}>
             <Icon name="checkmark-circle-outline" size={18} color="#fff" />
             <Text style={styles.bulkBtnText}>Complete All</Text>
@@ -716,7 +755,10 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       )}
+
+      <BottomNavBar navigation={navigation} activeTab="Home" />
     </View>
+    </GestureHandlerRootView>
   );
 };
 
@@ -727,7 +769,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 20,
+    paddingBottom: 92,
   },
   topBar: {
     flexDirection: 'row',
@@ -849,16 +891,38 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   todoItem: {
-    padding: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'transparent',
     borderRadius: 8,
     marginBottom: 10,
     flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  todoMainContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 12,
+  },
+  todoBody: {
+    flex: 1,
+  },
+  todoHeaderRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   todoTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
+    fontWeight: '700',
+    marginBottom: 4,
+    flex: 1,
+  },
+  todoMeta: {
+    fontSize: 12,
+    lineHeight: 18,
   },
   checkbox: {
     width: 20,
@@ -884,10 +948,23 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 6,
   },
   iconButton: {
-    padding: 4,
+    padding: 6,
+    borderRadius: 8,
+  },
+  statusRail: {
+    width: 82,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+  },
+  statusRailLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   completedSection: {
     marginTop: 12,

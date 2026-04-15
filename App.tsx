@@ -1,8 +1,15 @@
 import React from 'react'
-//import HomeScreen from './src/screens/HomeScreen';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppNavigator from './src/navigation/AppNavigator';
+import { ThemeProvider } from './src/contexts/ThemeContext';
 import './global.css'
 const App= () => {
-    return <AppNavigator />;
+    return (
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <ThemeProvider>
+                <AppNavigator />
+            </ThemeProvider>
+        </GestureHandlerRootView>
+    );
     };
 export default App;

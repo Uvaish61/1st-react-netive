@@ -16,6 +16,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { Todo } from '../types/todo.types';
 import { loadTodos, saveTodo } from '../storage/todo.storage';
 import { cancelTodoReminder, syncTodoReminders } from '../utils/todoNotifications';
+import notifee, { EventType } from '@notifee/react-native';
 import BottomNavBar from '../components/BottomNavBar';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import { useAppTheme } from '../contexts/ThemeContext';

@@ -321,22 +321,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   };
 
   const bulkDelete = () => {
-    Alert.alert(
-      'Delete Tasks',
-      `Are you sure you want to delete ${selectedIds.length} task(s)?`,
-      [
-        { text: 'Cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const updated = todos.filter(todo => !selectedIds.includes(todo.id));
-            await saveTodosWithSideEffects(updated);
-            exitSelectionMode();
-          },
-        },
-      ],
-    );
+    setDeleteModal({ visible: true, bulk: true });
   };
 
   const deleteTodo = async (id: string) => {

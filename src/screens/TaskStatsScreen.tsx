@@ -12,7 +12,6 @@ import Animated, {
 
 import { loadTodos } from '../storage/todo.storage';
 import { Todo } from '../types/todo.types';
-import BottomNavBar from '../components/BottomNavBar';
 import { useAppTheme } from '../contexts/ThemeContext';
 
 type MetricProps = {
@@ -220,7 +219,6 @@ const TaskStatsScreen: React.FC<any> = ({ navigation }) => {
         <MetricBar label="Overdue Ratio" value={stats.overdueRate} color="#F87171" delay={200} />
       </View>
       </ScrollView>
-      <BottomNavBar navigation={navigation} activeTab="TaskStats" />
     </View>
   );
 };

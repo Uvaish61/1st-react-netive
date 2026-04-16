@@ -52,7 +52,7 @@ const LoginScreen = ({ navigation, route }: any) => {
         await persistSession(result.user);
 
         Alert.alert("Success", "Login successful");
-        navigation.replace("Home");
+        navigation.replace("MainTabs");
     } catch {
         Alert.alert("Login Failed", "Could not log you in from local storage");
     }

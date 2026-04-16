@@ -17,7 +17,6 @@ import { Todo } from '../types/todo.types';
 import { loadTodos, saveTodo } from '../storage/todo.storage';
 import { cancelTodoReminder, syncTodoReminders } from '../utils/todoNotifications';
 import notifee, { EventType } from '@notifee/react-native';
-import BottomNavBar from '../components/BottomNavBar';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import { useAppTheme } from '../contexts/ThemeContext';
 
@@ -826,8 +825,6 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       )}
-
-      <BottomNavBar navigation={navigation} activeTab="Home" />
 
       <DeleteConfirmModal
         visible={deleteModal.visible}

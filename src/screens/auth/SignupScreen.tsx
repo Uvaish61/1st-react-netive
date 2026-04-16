@@ -43,7 +43,7 @@ const SignupScreen = ({ navigation, route } : any) => {
 
     await persistSession(result.user);
     Alert.alert("Success", "Account created successfully");
-    navigation.replace("Home");
+    navigation.replace("MainTabs");
   } catch {
     Alert.alert("Signup Failed", "Could not create account in local storage");
   }

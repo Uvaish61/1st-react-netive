@@ -12,7 +12,6 @@ import Animated, {
 
 import { loadTodos } from '../storage/todo.storage';
 import { Todo } from '../types/todo.types';
-import BottomNavBar from '../components/BottomNavBar';
 import { useAppTheme } from '../contexts/ThemeContext';
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -178,7 +177,6 @@ const ProgressReportScreen: React.FC<any> = ({ navigation }) => {
         <ProgressBar value={Math.min(100, data.weekCompleted * 14)} color="#A78BFA" delay={240} />
       </Animated.View>
       </ScrollView>
-      <BottomNavBar navigation={navigation} activeTab="ProgressReport" />
     </View>
   );
 };

@@ -14,7 +14,6 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { loadTodos, saveTodo } from '../storage/todo.storage';
 import { syncTodoReminders } from '../utils/todoNotifications';
 import { Tag, Todo } from '../types/todo.types';
-import BottomNavBar from '../components/BottomNavBar';
 import { useAppTheme } from '../contexts/ThemeContext';
 
 type PriorityType = 'High' | 'Medium' | 'Low';
@@ -334,7 +333,6 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
         </View>
       </Modal>
 
-      <BottomNavBar navigation={navigation} activeTab="AddTask" />
     </View>
   );
 };

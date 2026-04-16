@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const USERS_STORAGE_KEY = 'usersAccount';
 const SESSION_STORAGE_KEY = 'userAccount';
 const LOGGED_IN_STORAGE_KEY = 'isLoggedIn';
+const SESSION_DURATION_MS = 15 * 60 * 1000;
 
 export interface StoredUser {
   username: string;
@@ -11,7 +12,14 @@ export interface StoredUser {
   createdAt: string;
 }
 
+type StoredSession = {
+  username: string;
+  email: string;
+  expiresAt: number;
+};
+
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const getNextExpiry = () => Date.now() + SESSION_DURATION_MS;
 
 export const loadUsers = async (): Promise<StoredUser[]> => {
   try {
@@ -86,12 +94,15 @@ export const loginUser = async (email: string, password: string) => {
 };
 
 export const persistSession = async (user: Pick<StoredUser, 'username' | 'email'>) => {
+  const session: StoredSession = {
+    username: user.username,
+    email: normalizeEmail(user.email),
+    expiresAt: getNextExpiry(),
+  };
+
   await AsyncStorage.setItem(
     SESSION_STORAGE_KEY,
-    JSON.stringify({
-      username: user.username,
-      email: normalizeEmail(user.email),
-    }),
+    JSON.stringify(session),
   );
   await AsyncStorage.setItem(LOGGED_IN_STORAGE_KEY, 'true');
 };
@@ -102,10 +113,77 @@ export const getSession = async (): Promise<{ username: string; email: string } 
     if (!raw) {
       return null;
     }
-    return JSON.parse(raw);
+
+    const parsed = JSON.parse(raw) as StoredSession;
+
+    if (!parsed?.email || !parsed?.username) {
+      return null;
+    }
+
+    if (!parsed?.expiresAt || parsed.expiresAt <= Date.now()) {
+      await clearSession();
+      return null;
+    }
+
+    return {
+      username: parsed.username,
+      email: parsed.email,
+    };
   } catch {
     return null;
   }
+};
+
+export const refreshSession = async () => {
+  const raw = await AsyncStorage.getItem(SESSION_STORAGE_KEY);
+
+  if (!raw) {
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as StoredSession;
+
+    if (!parsed?.email || !parsed?.username) {
+      await clearSession();
+      return;
+    }
+
+    await AsyncStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify({
+        ...parsed,
+        expiresAt: getNextExpiry(),
+      }),
+    );
+  } catch {
+    await clearSession();
+  }
+};
+
+export const hasValidSession = async (): Promise<boolean> => {
+  const rawLoggedIn = await AsyncStorage.getItem(LOGGED_IN_STORAGE_KEY);
+
+  if (rawLoggedIn !== 'true') {
+    return false;
+  }
+
+  const session = await getSession();
+
+  if (!session?.email) {
+    return false;
+  }
+
+  const user = await findUserByEmail(session.email);
+  const isValid = Boolean(user);
+
+  if (!isValid) {
+    await clearSession();
+    return false;
+  }
+
+  await refreshSession();
+  return true;
 };
 
 export const clearSession = async () => {
@@ -120,7 +198,7 @@ export const updateSessionUsername = async (newUsername: string): Promise<void> 
   }
   await AsyncStorage.setItem(
     SESSION_STORAGE_KEY,
-    JSON.stringify({ ...session, username: newUsername }),
+    JSON.stringify({ ...session, username: newUsername, expiresAt: getNextExpiry() }),
   );
   const users = await loadUsers();
   const updated = users.map(user =>

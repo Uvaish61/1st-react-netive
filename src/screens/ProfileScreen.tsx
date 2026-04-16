@@ -15,7 +15,6 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { useAppTheme } from '../contexts/ThemeContext';
-import BottomNavBar from '../components/BottomNavBar';
 import {
   clearSession,
   deleteAccount,
@@ -107,7 +106,7 @@ const ProfileScreen: React.FC<any> = ({ navigation }) => {
         style: 'destructive',
         onPress: async () => {
           await clearSession();
-          navigation.reset({ index: 0, routes: [{ name: 'AuthLanding' }] });
+          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
         },
       },
     ]);
@@ -151,7 +150,7 @@ const ProfileScreen: React.FC<any> = ({ navigation }) => {
 
   const handleDeleteAccount = async () => {
     await deleteAccount();
-    navigation.reset({ index: 0, routes: [{ name: 'AuthLanding' }] });
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 
   const openEditName = () => {
@@ -319,8 +318,6 @@ const ProfileScreen: React.FC<any> = ({ navigation }) => {
           </TouchableOpacity>
         </Animated.View>
       </ScrollView>
-
-      <BottomNavBar navigation={navigation} activeTab="Profile" />
 
       {/* Edit Name Modal */}
       <Modal visible={activeModal === 'editName'} transparent animationType="slide">

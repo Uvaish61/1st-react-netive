@@ -154,16 +154,16 @@ const styles = StyleSheet.create({
   },
   glowLarge: {
     position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
     backgroundColor: '#7BDFBA',
   },
   glowSmall: {
     position: 'absolute',
-    width: 210,
-    height: 210,
-    borderRadius: 105,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
     backgroundColor: '#7BDFBA',
   },
   logoLockup: {

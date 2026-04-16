@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import {
   clearSession,
   getSession,
@@ -7,7 +7,73 @@ import {
 } from '../storage/auth.storage';
 
 const SplashScreen = ({ navigation }: any) => {
+  const largeGlowScale = useRef(new Animated.Value(1)).current;
+  const smallGlowScale = useRef(new Animated.Value(1)).current;
+  const largeGlowOpacity = useRef(new Animated.Value(0.1)).current;
+  const smallGlowOpacity = useRef(new Animated.Value(0.14)).current;
+
   useEffect(() => {
+    const largeLoop = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(largeGlowScale, {
+            toValue: 1.08,
+            duration: 1400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(largeGlowOpacity, {
+            toValue: 0.16,
+            duration: 1400,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(largeGlowScale, {
+            toValue: 1,
+            duration: 1400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(largeGlowOpacity, {
+            toValue: 0.1,
+            duration: 1400,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    );
+
+    const smallLoop = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(smallGlowScale, {
+            toValue: 1.12,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(smallGlowOpacity, {
+            toValue: 0.2,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(smallGlowScale, {
+            toValue: 1,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(smallGlowOpacity, {
+            toValue: 0.14,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    );
+
+    largeLoop.start();
+    smallLoop.start();
+
     const checkAuth = async () => {
       const session = await getSession();
       const validSession = await hasValidSession();
@@ -25,12 +91,33 @@ const SplashScreen = ({ navigation }: any) => {
     };
 
     checkAuth();
-  }, [navigation]);
+
+    return () => {
+      largeLoop.stop();
+      smallLoop.stop();
+    };
+  }, [largeGlowOpacity, largeGlowScale, navigation, smallGlowOpacity, smallGlowScale]);
 
   return (
     <View style={styles.screen}>
-      <View style={styles.glowLarge} />
-      <View style={styles.glowSmall} />
+      <Animated.View
+        style={[
+          styles.glowLarge,
+          {
+            opacity: largeGlowOpacity,
+            transform: [{ translateY: -28 }, { scale: largeGlowScale }],
+          },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.glowSmall,
+          {
+            opacity: smallGlowOpacity,
+            transform: [{ translateY: -8 }, { scale: smallGlowScale }],
+          },
+        ]}
+      />
 
       <View style={styles.logoLockup}>
         <View style={styles.markWrap}>
@@ -67,19 +154,17 @@ const styles = StyleSheet.create({
   },
   glowLarge: {
     position: 'absolute',
-    width: 380,
-    height: 380,
-    borderRadius: 190,
-    backgroundColor: 'rgba(123, 223, 186, 0.12)',
-    transform: [{ translateY: -32 }],
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: '#7BDFBA',
   },
   glowSmall: {
     position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(123, 223, 186, 0.12)',
-    transform: [{ translateY: -12 }],
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    backgroundColor: '#7BDFBA',
   },
   logoLockup: {
     alignItems: 'center',

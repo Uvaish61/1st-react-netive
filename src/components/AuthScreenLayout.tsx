@@ -201,10 +201,11 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     padding: 5,
     marginBottom: 24,
+    overflow: 'hidden',
   },
   segmentButton: {
     flex: 1,
-    borderRadius: 22,
+    borderRadius: 21,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',

@@ -121,14 +121,14 @@ export const scheduleTodoReminder = async (todo: Todo) => {
     await notifee.createTriggerNotification(
       {
         id: notificationId,
-        title: 'Task Reminder',
-        body: todo.title,
+        title: '🔔 Task Due Now!',
+        body: `"${todo.title}" is due now.`,
         android: {
           channelId: TODO_CHANNEL_ID,
-          pressAction: {
-            id: 'default',
-          },
+          pressAction: { id: 'default' },
+          importance: AndroidImportance.HIGH,
         },
+        ios: { sound: 'default' },
       },
       {
         type: TriggerType.TIMESTAMP,

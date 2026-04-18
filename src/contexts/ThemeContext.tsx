@@ -26,7 +26,7 @@ const darkColors: ThemeColors = {
   text: '#FFFFFF',
   subText: '#B8BFCC',
   input: '#232730',
-  border: '#2E333D',
+  border: '#2A3D2E',
   filterBg: '#232730',
   filterActive: '#4CAF50',
 };

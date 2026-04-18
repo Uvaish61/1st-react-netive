@@ -60,6 +60,8 @@ const ensureNotificationSetup = async () => {
   await notifee.createChannel({
     id: TODO_CHANNEL_ID,
     name: 'Todo Reminders',
+    importance: AndroidImportance.HIGH,
+    vibration: true,
   });
 };
 
@@ -84,12 +86,14 @@ const scheduleWarningReminder = async (todo: Todo) => {
     await notifee.createTriggerNotification(
       {
         id: notificationId,
-        title: '⏰ Task Due Soon!',
-        body: `"${todo.title}" sirf 5 minute mein due hai!`,
+        title: '⏰ Due in 5 Minutes!',
+        body: `"${todo.title}" is due in 5 minutes.`,
         android: {
           channelId: TODO_CHANNEL_ID,
           pressAction: { id: 'default' },
+          importance: AndroidImportance.HIGH,
         },
+        ios: { sound: 'default' },
       },
       {
         type: TriggerType.TIMESTAMP,

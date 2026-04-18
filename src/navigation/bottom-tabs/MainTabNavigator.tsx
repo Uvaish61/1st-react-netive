@@ -32,9 +32,17 @@ const tabs = {
 } as const;
 
 const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
+  const { colors, isDark } = useAppTheme();
+
   return (
     <View style={styles.wrapper}>
-      <View style={styles.bar}>
+      <View style={[
+        styles.bar,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+        },
+      ]}>
         {state.routes.map((route, index) => {
           const isFocused = state.index === index;
           const tab = tabs[route.name as keyof typeof tabs];
@@ -78,9 +86,13 @@ const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => 
                 <Icon
                   name={tab.icon}
                   size={20}
-                  color={isFocused ? '#FFFFFF' : '#B8BFCC'}
+                  color={isFocused ? '#FFFFFF' : colors.subText}
                 />
-                <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>
+                <Text style={[
+                  styles.tabLabel,
+                  { color: colors.subText },
+                  isFocused && styles.tabLabelActive,
+                ]}>
                   {tab.label}
                 </Text>
               </View>

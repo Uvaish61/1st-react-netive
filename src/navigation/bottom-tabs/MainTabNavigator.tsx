@@ -11,6 +11,7 @@ import HomeScreen from '../../screens/HomeScreen';
 import ProfileScreen from '../../screens/ProfileScreen';
 import ProgressReportScreen from '../../screens/ProgressReportScreen';
 import TaskStatsScreen from '../../screens/TaskStatsScreen';
+import { useAppTheme } from '../../contexts/ThemeContext';
 
 type TabParamList = {
   Home: undefined;

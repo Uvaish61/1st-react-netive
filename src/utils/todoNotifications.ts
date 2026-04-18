@@ -1,4 +1,4 @@
-import notifee, { TriggerType } from '@notifee/react-native';
+import notifee, { AndroidImportance, TriggerType } from '@notifee/react-native';
 
 import { Todo } from '../types/todo.types';
 

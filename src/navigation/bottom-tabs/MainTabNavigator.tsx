@@ -32,7 +32,7 @@ const tabs = {
 } as const;
 
 const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
 
   return (
     <View style={styles.wrapper}>

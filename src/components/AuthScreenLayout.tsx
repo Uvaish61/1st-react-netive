@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     marginTop: -4,
     paddingHorizontal: 20,
     paddingTop: 18,
-    paddingBottom: 32,
+    paddingBottom: 52,
     minHeight: 540,
   },
   segmentedControl: {

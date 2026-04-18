@@ -153,6 +153,11 @@ const styles = StyleSheet.create({
   },
   tabInnerActive: {
     backgroundColor: '#4CAF50',
+    shadowColor: '#4CAF50',
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
   },
   tabLabel: {
     color: '#B8BFCC',

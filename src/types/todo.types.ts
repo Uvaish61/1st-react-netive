@@ -4,6 +4,12 @@ export interface Tag {
     color: string;
 }
 
+export interface Subtask {
+    id: string;
+    title: string;
+    completed: boolean;
+}
+
 export interface Todo {
     id: string;
     title: string
@@ -18,5 +24,6 @@ export interface Todo {
     completionType?: "early" | "ontime" | "late";
     tags?: Tag[];
     notes?: string;
+    subtasks?: Subtask[];
     }
     

@@ -76,6 +76,7 @@ const normalizeTodo = (todo: Todo): Todo => ({
   priority: todo.priority || DEFAULT_PRIORITY,
   category: (todo.category as CategoryType) || DEFAULT_CATEGORY,
   repeat: (todo.repeat as RepeatType) || DEFAULT_REPEAT,
+  subtasks: Array.isArray(todo.subtasks) ? todo.subtasks : [],
   status: todo.completed ? 'completed' : getTodoStatus(todo),
 });
 

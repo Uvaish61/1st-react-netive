@@ -13,7 +13,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 import { loadTodos, saveTodo } from '../storage/todo.storage';
 import { syncTodoReminders } from '../utils/todoNotifications';
-import { Tag, Todo } from '../types/todo.types';
+import { Subtask, Tag, Todo } from '../types/todo.types';
 import { useAppTheme } from '../contexts/ThemeContext';
 
 type PriorityType = 'High' | 'Medium' | 'Low';
@@ -49,6 +49,8 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
   const [selectedTagColor, setSelectedTagColor] = useState(TAG_COLORS[0]);
   const [notes, setNotes] = useState(editingTodo?.notes || '');
   const [showNotesInput, setShowNotesInput] = useState(Boolean(editingTodo?.notes));
+  const [subtaskInput, setSubtaskInput] = useState('');
+  const [subtasks, setSubtasks] = useState<Subtask[]>(editingTodo?.subtasks || []);
   const { colors, isDark } = useAppTheme();
   const placeholderColor = isDark ? '#787878' : '#94A3B8';
   const cardShadowStyle = {
@@ -92,6 +94,28 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
     setSelectedTags(prev => prev.filter(tag => tag.id !== id));
   };
 
+  const addSubtask = () => {
+    const subtaskTitle = subtaskInput.trim();
+
+    if (!subtaskTitle) {
+      return;
+    }
+
+    setSubtasks(prev => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        title: subtaskTitle,
+        completed: false,
+      },
+    ]);
+    setSubtaskInput('');
+  };
+
+  const removeSubtask = (id: string) => {
+    setSubtasks(prev => prev.filter(subtask => subtask.id !== id));
+  };
+
   const saveTask = async () => {
     if (!input.trim()) {
       Alert.alert('Missing title', 'Task title required hai.');
@@ -116,6 +140,7 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
               repeat,
               tags: selectedTags,
               notes: notes.trim() || undefined,
+              subtasks,
             }
           : todo,
       );
@@ -133,6 +158,7 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
         repeat,
         tags: selectedTags,
         notes: notes.trim() || undefined,
+        subtasks,
       };
 
       nextTodos = [...normalizedTodos, newTodo];
@@ -181,6 +207,60 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
           multiline
         />
       )}
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Subtasks</Text>
+        <View
+          style={[
+            styles.subtaskInputRow,
+            { borderColor: colors.border, backgroundColor: colors.input },
+            cardShadowStyle,
+          ]}
+        >
+          <TextInput
+            style={[styles.subtaskInput, { color: colors.text }]}
+            placeholder="Add a smaller step..."
+            placeholderTextColor={placeholderColor}
+            value={subtaskInput}
+            onChangeText={setSubtaskInput}
+            onSubmitEditing={addSubtask}
+          />
+          <TouchableOpacity style={styles.subtaskAddButton} onPress={addSubtask}>
+            <Icon name="add" size={16} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+
+        {subtasks.length > 0 && (
+          <View style={styles.subtaskList}>
+            {subtasks.map((subtask, index) => (
+              <View
+                key={subtask.id}
+                style={[
+                  styles.subtaskItem,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                  cardShadowStyle,
+                ]}
+              >
+                <View style={styles.subtaskInfo}>
+                  <View style={styles.subtaskIndexBadge}>
+                    <Text style={styles.subtaskIndexText}>{index + 1}</Text>
+                  </View>
+                  <Text style={[styles.subtaskTitle, { color: colors.text }]} numberOfLines={2}>
+                    {subtask.title}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.subtaskRemoveButton, { backgroundColor: colors.filterBg }]}
+                  onPress={() => removeSubtask(subtask.id)}
+                >
+                  <Icon name="close-outline" size={16} color="#EF4444" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
 
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Priority</Text>
@@ -435,6 +515,72 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 12,
+  },
+  subtaskInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingLeft: 14,
+    paddingRight: 8,
+    marginBottom: 10,
+  },
+  subtaskInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 14,
+  },
+  subtaskAddButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#4CAF50',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subtaskList: {
+    gap: 8,
+  },
+  subtaskItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  subtaskInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginRight: 10,
+  },
+  subtaskIndexBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#4CAF50',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subtaskIndexText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  subtaskTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  subtaskRemoveButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tagRow: {
     flexDirection: 'row',

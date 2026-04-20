@@ -431,6 +431,25 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     await saveTodosWithSideEffects(updatedTodos);
   };
 
+  const toggleSubtaskComplete = async (todoId: string, subtaskId: string) => {
+    const updatedTodos = todos.map(todo => {
+      if (todo.id !== todoId) {
+        return todo;
+      }
+
+      return normalizeTodo({
+        ...todo,
+        subtasks: (todo.subtasks || []).map(subtask =>
+          subtask.id === subtaskId
+            ? { ...subtask, completed: !subtask.completed }
+            : subtask,
+        ),
+      });
+    });
+
+    await saveTodosWithSideEffects(updatedTodos);
+  };
+
   const renderRightActions = (id: string) => (
     <TouchableOpacity style={styles.deleteSwipe} onPress={() => confirmDelete(id)}>
       <Text style={styles.deleteText}>Delete</Text>
@@ -465,6 +484,8 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     const currentStatus = getTodoStatus(item);
     const hasReminder = Boolean(item.dueDate && item.dueTime && !item.completed);
     const isSelected = selectedIds.includes(item.id);
+    const subtaskCount = item.subtasks?.length || 0;
+    const completedSubtaskCount = (item.subtasks || []).filter(subtask => subtask.completed).length;
     const statusRailBg =
       currentStatus === 'completed'
         ? isDark
@@ -554,6 +575,11 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
               </Text>
               <Text style={[styles.todoMeta, { color: theme.subText }]}>Repeat: {item.repeat || DEFAULT_REPEAT}</Text>
               {hasReminder && <Text style={[styles.todoMeta, { color: theme.subText }]}>Reminder scheduled</Text>}
+              {subtaskCount > 0 && (
+                <Text style={[styles.todoMeta, { color: theme.subText }]}>
+                  Subtasks: {completedSubtaskCount}/{subtaskCount} complete
+                </Text>
+              )}
 
               {item.tags && item.tags.length > 0 && (
                 <View style={styles.tagRow}>
@@ -580,6 +606,44 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
                     {item.notes}
                   </Text>
                 </TouchableOpacity>
+              )}
+
+              {subtaskCount > 0 && (
+                <View style={styles.subtaskContainer}>
+                  {(item.subtasks || []).map(subtask => (
+                    <TouchableOpacity
+                      key={subtask.id}
+                      style={[
+                        styles.subtaskRow,
+                        {
+                          backgroundColor: theme.filterBg,
+                          borderColor: theme.border,
+                        },
+                      ]}
+                      activeOpacity={0.8}
+                      onPress={() => toggleSubtaskComplete(item.id, subtask.id)}
+                    >
+                      <View
+                        style={[
+                          styles.subtaskCheckbox,
+                          subtask.completed && styles.subtaskCheckboxChecked,
+                        ]}
+                      >
+                        {subtask.completed && <Icon name="checkmark" size={12} color="#FFFFFF" />}
+                      </View>
+                      <Text
+                        style={[
+                          styles.subtaskLabel,
+                          { color: subtask.completed ? theme.subText : theme.text },
+                          subtask.completed && styles.subtaskLabelCompleted,
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {subtask.title}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               )}
             </View>
           </View>
@@ -1147,6 +1211,40 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontStyle: 'italic',
+  },
+  subtaskContainer: {
+    marginTop: 8,
+    gap: 6,
+  },
+  subtaskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  subtaskCheckbox: {
+    width: 18,
+    height: 18,
+    borderWidth: 2,
+    borderColor: '#94A3B8',
+    borderRadius: 9,
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subtaskCheckboxChecked: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  subtaskLabel: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  subtaskLabelCompleted: {
+    textDecorationLine: 'line-through',
   },
   modalOverlay: {
     flex: 1,

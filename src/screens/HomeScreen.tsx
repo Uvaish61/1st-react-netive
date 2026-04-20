@@ -407,6 +407,11 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
 
   const showCompletedSection = activeFilter === 'all';
   const listData = showCompletedSection ? activeTodos : filteredTodos.sort(sortTodosByDueDate);
+  const smartSectionConfig: { key: SmartSectionKey; title: string }[] = [
+    { key: 'today', title: 'Today' },
+    { key: 'tomorrow', title: 'Tomorrow' },
+    { key: 'thisWeek', title: 'This Week' },
+  ];
 
   const enterSelectionMode = (id: string) => {
     setSelectionMode(true);
@@ -734,6 +739,28 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     );
   };
 
+  const renderSmartSection = (sectionKey: SmartSectionKey, title: string) => {
+    const items = smartSections[sectionKey];
+
+    if (!items.length) {
+      return null;
+    }
+
+    return (
+      <View key={sectionKey} style={styles.smartSection}>
+        <View style={styles.smartSectionHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>{title}</Text>
+          <View style={[styles.smartSectionCountPill, { backgroundColor: theme.filterBg }]}>
+            <Text style={[styles.smartSectionCountText, { color: theme.text }]}>{items.length}</Text>
+          </View>
+        </View>
+        {items.map(todo => (
+          <View key={todo.id}>{renderTodoItem({ item: todo })}</View>
+        ))}
+      </View>
+    );
+  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
     <View style={[styles.container, { backgroundColor: theme.bg }]}> 
@@ -878,12 +905,24 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
       </View>
 
       <FlatList
-        data={listData}
+        data={showCompletedSection ? [] : listData}
         keyExtractor={item => item.id}
         ListEmptyComponent={
-          <Text style={[styles.emptyText, { color: theme.subText }]}>No tasks found for this filter.</Text>
+          !showCompletedSection ? (
+            <Text style={[styles.emptyText, { color: theme.subText }]}>No tasks found for this filter.</Text>
+          ) : null
         }
         renderItem={renderTodoItem}
+        ListHeaderComponent={
+          showCompletedSection ? (
+            <View>
+              {smartSectionConfig.map(section => renderSmartSection(section.key, section.title))}
+              {activeTodos.length === 0 && (
+                <Text style={[styles.emptyText, { color: theme.subText }]}>No active tasks in smart sections yet.</Text>
+              )}
+            </View>
+          ) : null
+        }
         ListFooterComponent={
           showCompletedSection && completedTodos.length > 0 ? (
             <View style={styles.completedSection}>
@@ -1248,6 +1287,26 @@ const styles = StyleSheet.create({
   completedSection: {
     marginTop: 12,
     paddingBottom: 20,
+  },
+  smartSection: {
+    marginBottom: 8,
+  },
+  smartSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  smartSectionCountPill: {
+    minWidth: 28,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    alignItems: 'center',
+  },
+  smartSectionCountText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   sectionTitle: {
     fontSize: 16,

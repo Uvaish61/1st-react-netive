@@ -24,6 +24,7 @@ type FilterType = 'all' | 'pending' | 'completed' | 'overdue';
 type CategoryType = 'Work' | 'Personal' | 'Study';
 type RepeatType = 'none' | 'daily' | 'weekly';
 type SortType = 'dueDate' | 'priority' | 'title' | 'createdAt';
+type SmartSectionKey = 'today' | 'tomorrow' | 'thisWeek' | 'later' | 'unscheduled' | 'overdue';
 
 const DEFAULT_PRIORITY = 'Medium';
 const DEFAULT_CATEGORY: CategoryType = 'Personal';
@@ -52,6 +53,78 @@ const getDueDateTime = (todo: Pick<Todo, 'dueDate' | 'dueTime'>) => {
 
   return dueDateTime;
 };
+
+const getStartOfDay = (date: Date) => {
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+  return startOfDay;
+};
+
+const addDays = (date: Date, amount: number) => {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + amount);
+  return nextDate;
+};
+
+const isSameDay = (left: Date, right: Date) =>
+  left.getFullYear() === right.getFullYear() &&
+  left.getMonth() === right.getMonth() &&
+  left.getDate() === right.getDate();
+
+const getEndOfWeek = (date: Date) => {
+  const startOfDay = getStartOfDay(date);
+  const day = startOfDay.getDay();
+  const remainingDays = (7 - day) % 7;
+  const endOfWeek = addDays(startOfDay, remainingDays);
+  endOfWeek.setHours(23, 59, 59, 999);
+  return endOfWeek;
+};
+
+const getSmartSectionKey = (todo: Todo, now = new Date()): SmartSectionKey => {
+  const dueDateTime = getDueDateTime(todo);
+
+  if (!dueDateTime) {
+    return 'unscheduled';
+  }
+
+  if (!todo.completed && dueDateTime.getTime() < now.getTime()) {
+    return 'overdue';
+  }
+
+  const today = getStartOfDay(now);
+  const tomorrow = addDays(today, 1);
+  const endOfWeek = getEndOfWeek(now);
+
+  if (isSameDay(dueDateTime, today)) {
+    return 'today';
+  }
+
+  if (isSameDay(dueDateTime, tomorrow)) {
+    return 'tomorrow';
+  }
+
+  if (dueDateTime > tomorrow && dueDateTime <= endOfWeek) {
+    return 'thisWeek';
+  }
+
+  return 'later';
+};
+
+const groupTodosBySmartSection = (items: Todo[], now = new Date()) =>
+  items.reduce<Record<SmartSectionKey, Todo[]>>(
+    (groups, todo) => {
+      groups[getSmartSectionKey(todo, now)].push(todo);
+      return groups;
+    },
+    {
+      today: [],
+      tomorrow: [],
+      thisWeek: [],
+      later: [],
+      unscheduled: [],
+      overdue: [],
+    },
+  );
 
 const getTodoStatus = (todo: Todo): Exclude<FilterType, 'all'> => {
   if (todo.completed) {
@@ -271,6 +344,8 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     [filteredTodos, sortBy, sortOrder],
   );
 
+  const smartSections = useMemo(() => groupTodosBySmartSection(activeTodos), [activeTodos]);
+
   const completedTodos = useMemo(
     () =>
       filteredTodos
@@ -286,13 +361,13 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   const upcomingTasks = useMemo(() => {
     const now = Date.now();
     const oneHour = 60 * 60 * 1000;
-    return activeTodos.filter(todo => {
+    return smartSections.today.filter(todo => {
       const dt = getDueDateTime(todo);
       if (!dt) { return false; }
       const diff = dt.getTime() - now;
       return diff > 0 && diff <= oneHour;
     });
-  }, [activeTodos]);
+  }, [smartSections.today]);
 
   const badgeCount = upcomingTasks.length + newNotifCount;
 

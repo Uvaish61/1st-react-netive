@@ -1319,7 +1319,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-  }
+  },
   iconButton: {
     padding: 6,
     borderRadius: 8,

@@ -18,6 +18,7 @@ export interface Todo {
     dueTime: string | null ;
     status: 'pending' | 'completed' | 'overdue';
     completedAt: string | null;
+    archivedAt?: string | null;
     priority?: 'High' | 'Medium' | 'Low';
     category?: 'Work' | 'Personal' | 'Study';
     repeat?: 'none' | 'daily' | 'weekly';

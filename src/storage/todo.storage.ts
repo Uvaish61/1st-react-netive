@@ -17,6 +17,7 @@ const normalizeTodo = (todo: Partial<Todo>): Todo => ({
     dueTime: todo.dueTime || null,
     status: todo.status === 'completed' || todo.status === 'overdue' ? todo.status : 'pending',
     completedAt: todo.completedAt || null,
+    archivedAt: todo.archivedAt || null,
     priority: todo.priority,
     category: todo.category,
     repeat: todo.repeat,

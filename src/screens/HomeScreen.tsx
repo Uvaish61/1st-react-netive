@@ -146,6 +146,7 @@ const normalizeTodo = (todo: Todo): Todo => ({
   dueDate: todo.dueDate || null,
   dueTime: todo.dueTime || null,
   completedAt: todo.completedAt || null,
+  archivedAt: todo.archivedAt || null,
   priority: todo.priority || DEFAULT_PRIORITY,
   category: (todo.category as CategoryType) || DEFAULT_CATEGORY,
   repeat: (todo.repeat as RepeatType) || DEFAULT_REPEAT,
@@ -305,9 +306,14 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     return animations[id];
   };
 
+  const visibleTodos = useMemo(
+    () => todos.filter(todo => !todo.archivedAt),
+    [todos],
+  );
+
   const filteredTodos = useMemo(
     () =>
-      todos.filter(todo => {
+      visibleTodos.filter(todo => {
         const matchesSearch = todo.title
           .toLowerCase()
           .includes(searchQuery.trim().toLowerCase());
@@ -318,17 +324,17 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
 
         return matchesSearch && matchesFilter;
       }),
-    [activeFilter, searchQuery, todos],
+    [activeFilter, searchQuery, visibleTodos],
   );
 
   const summary = useMemo(
     () => ({
-      total: todos.length,
-      pending: todos.filter(todo => getTodoStatus(todo) === 'pending').length,
-      overdue: todos.filter(todo => getTodoStatus(todo) === 'overdue').length,
-      completed: todos.filter(todo => todo.completed).length,
+      total: visibleTodos.length,
+      pending: visibleTodos.filter(todo => getTodoStatus(todo) === 'pending').length,
+      overdue: visibleTodos.filter(todo => getTodoStatus(todo) === 'overdue').length,
+      completed: visibleTodos.filter(todo => todo.completed).length,
     }),
-    [todos],
+    [visibleTodos],
   );
 
   const completionRate = useMemo(() => {
@@ -460,6 +466,24 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     await saveTodosWithSideEffects(updatedTodos);
   };
 
+  const archiveTodo = async (id: string) => {
+    const updatedTodos = todos.map(todo =>
+      todo.id === id
+        ? normalizeTodo({
+            ...todo,
+            archivedAt: new Date().toISOString(),
+          })
+        : todo,
+    );
+
+    await cancelTodoReminder(id);
+    await saveTodosWithSideEffects(updatedTodos);
+
+    if (selectedIds.includes(id)) {
+      setSelectedIds(prev => prev.filter(value => value !== id));
+    }
+  };
+
   const confirmDelete = (id: string) => {
     setDeleteModal({ visible: true, id });
   };
@@ -531,9 +555,14 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   };
 
   const renderRightActions = (id: string) => (
-    <TouchableOpacity style={styles.deleteSwipe} onPress={() => confirmDelete(id)}>
-      <Text style={styles.deleteText}>Delete</Text>
-    </TouchableOpacity>
+    <View style={styles.swipeActions}>
+      <TouchableOpacity style={styles.archiveSwipe} onPress={() => archiveTodo(id)}>
+        <Text style={styles.swipeActionText}>Archive</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.deleteSwipe} onPress={() => confirmDelete(id)}>
+        <Text style={styles.swipeActionText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   const theme = colors;
@@ -1251,15 +1280,26 @@ const styles = StyleSheet.create({
   checkboxChecked: {
     backgroundColor: '#4CAF50',
   },
+  swipeActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  archiveSwipe: {
+    backgroundColor: '#F59E0B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 88,
+    borderRadius: 8,
+  },
   deleteSwipe: {
     backgroundColor: '#ef4444',
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,
     borderRadius: 8,
-    marginBottom: 10,
   },
-  deleteText: {
+  swipeActionText: {
     color: '#fff',
     fontWeight: 'bold',
   },

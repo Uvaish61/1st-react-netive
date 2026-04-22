@@ -5,7 +5,7 @@ import { Todo } from '../types/todo.types';
 const TODO_CHANNEL_ID = 'todo-reminders';
 
 const getReminderDateTime = (todo: Todo) => {
-  if (!todo.dueDate || !todo.dueTime || todo.completed) {
+  if (!todo.dueDate || !todo.dueTime || todo.completed || todo.archivedAt) {
     return null;
   }
 
@@ -31,7 +31,7 @@ const getNotificationId = (todoId: string) => `todo-reminder-${todoId}`;
 const getWarningNotificationId = (todoId: string) => `todo-warning-${todoId}`;
 
 const getWarningDateTime = (todo: Todo) => {
-  if (!todo.dueDate || !todo.dueTime || todo.completed) {
+  if (!todo.dueDate || !todo.dueTime || todo.completed || todo.archivedAt) {
     return null;
   }
 

@@ -6,6 +6,7 @@ import MainTabNavigator from './bottom-tabs/MainTabNavigator';
 import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignupScreen from '../screens/auth/SignupScreen';
+import ArchivedTasksScreen from '../screens/ArchivedTasksScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -17,6 +18,7 @@ const AppNavigator = () => {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+        <Stack.Screen name="ArchivedTasks" component={ArchivedTasksScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

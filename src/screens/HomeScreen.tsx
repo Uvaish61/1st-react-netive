@@ -819,6 +819,12 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity
             style={[styles.topBarBtn, { backgroundColor: theme.card }, pillShadowStyle]}
+            onPress={() => navigation.getParent()?.navigate('ArchivedTasks')}
+          >
+            <Icon name="archive-outline" size={18} color={theme.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.topBarBtn, { backgroundColor: theme.card }, pillShadowStyle]}
             onPress={() => navigation.navigate('TaskStats')}
           >
             <Icon name="bar-chart-outline" size={18} color={theme.text} />

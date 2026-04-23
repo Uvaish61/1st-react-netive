@@ -243,6 +243,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [newNotifCount, setNewNotifCount] = useState(0);
   const { isDark, colors, toggleTheme } = useAppTheme();
+  const normalizedSearchQuery = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
 
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;
   const bellAnim = useRef(new Animated.Value(0)).current;
@@ -323,9 +324,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   const filteredTodos = useMemo(
     () =>
       visibleTodos.filter(todo => {
-        const matchesSearch = todo.title
-          .toLowerCase()
-          .includes(searchQuery.trim().toLowerCase());
+        const matchesSearch = todo.title.toLowerCase().includes(normalizedSearchQuery);
 
         const currentStatus = getTodoStatus(todo);
         const matchesFilter =
@@ -333,7 +332,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
 
         return matchesSearch && matchesFilter;
       }),
-    [activeFilter, searchQuery, visibleTodos],
+    [activeFilter, normalizedSearchQuery, visibleTodos],
   );
 
   const summary = useMemo(
@@ -421,7 +420,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   }, [ringBell]);
 
   const showCompletedSection = activeFilter === 'all';
-  const listData = showCompletedSection ? activeTodos : filteredTodos.sort(sortTodosByDueDate);
+  const listData = showCompletedSection ? activeTodos : [...filteredTodos].sort(sortTodosByDueDate);
   const smartSectionConfig: { key: SmartSectionKey; title: string }[] = [
     { key: 'today', title: 'Today' },
     { key: 'tomorrow', title: 'Tomorrow' },

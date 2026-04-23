@@ -39,8 +39,17 @@ const getDueDateTime = (todo: Pick<Todo, 'dueDate' | 'dueTime'>) => {
 
   const dueDateTime = new Date(todo.dueDate);
 
+  if (Number.isNaN(dueDateTime.getTime())) {
+    return null;
+  }
+
   if (todo.dueTime) {
     const time = new Date(todo.dueTime);
+
+    if (Number.isNaN(time.getTime())) {
+      return null;
+    }
+
     dueDateTime.setHours(
       time.getHours(),
       time.getMinutes(),
@@ -491,6 +500,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   const handleDeleteConfirm = async () => {
     if (deleteModal.bulk) {
       const updated = todos.filter(todo => !selectedIds.includes(todo.id));
+      await Promise.all(selectedIds.map(id => cancelTodoReminder(id)));
       setDeleteModal({ visible: false });
       await saveTodosWithSideEffects(updated);
       exitSelectionMode();

@@ -4,6 +4,8 @@ import { Todo } from '../types/todo.types';
 
 const TODO_CHANNEL_ID = 'todo-reminders';
 
+const isValidDate = (value: Date) => !Number.isNaN(value.getTime());
+
 const getReminderDateTime = (todo: Todo) => {
   if (!todo.dueDate || !todo.dueTime || todo.completed || todo.archivedAt) {
     return null;
@@ -11,6 +13,10 @@ const getReminderDateTime = (todo: Todo) => {
 
   const dueDateTime = new Date(todo.dueDate);
   const dueTime = new Date(todo.dueTime);
+
+  if (!isValidDate(dueDateTime) || !isValidDate(dueTime)) {
+    return null;
+  }
 
   dueDateTime.setHours(
     dueTime.getHours(),
@@ -37,6 +43,10 @@ const getWarningDateTime = (todo: Todo) => {
 
   const dueDateTime = new Date(todo.dueDate);
   const dueTime = new Date(todo.dueTime);
+
+  if (!isValidDate(dueDateTime) || !isValidDate(dueTime)) {
+    return null;
+  }
 
   dueDateTime.setHours(
     dueTime.getHours(),

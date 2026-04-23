@@ -421,6 +421,21 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
 
   const showCompletedSection = activeFilter === 'all';
   const listData = showCompletedSection ? activeTodos : [...filteredTodos].sort(sortTodosByDueDate);
+  const emptyStateMessage = useMemo(() => {
+    if (!visibleTodos.length) {
+      return 'No tasks yet. Tap Add to create your first task.';
+    }
+
+    if (normalizedSearchQuery) {
+      return 'No tasks match your search.';
+    }
+
+    if (activeFilter !== 'all') {
+      return `No ${activeFilter} tasks found.`;
+    }
+
+    return 'No tasks found for this view.';
+  }, [activeFilter, normalizedSearchQuery, visibleTodos.length]);
   const smartSectionConfig: { key: SmartSectionKey; title: string }[] = [
     { key: 'today', title: 'Today' },
     { key: 'tomorrow', title: 'Tomorrow' },
@@ -959,7 +974,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
         keyExtractor={item => item.id}
         ListEmptyComponent={
           !showCompletedSection ? (
-            <Text style={[styles.emptyText, { color: theme.subText }]}>No tasks found for this filter.</Text>
+            <Text style={[styles.emptyText, { color: theme.subText }]}>{emptyStateMessage}</Text>
           ) : null
         }
         renderItem={renderTodoItem}

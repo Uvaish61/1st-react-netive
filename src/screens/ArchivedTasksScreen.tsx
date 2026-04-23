@@ -70,18 +70,26 @@ const ArchivedTasksScreen: React.FC<any> = ({ navigation }) => {
     await syncTodoReminders(nextTodos);
   }, []);
 
-  const restoreTodo = useCallback(async (id: string) => {
-    const nextTodos = todos.map(todo =>
-      todo.id === id
-        ? {
-            ...todo,
-            archivedAt: null,
-          }
-        : todo,
-    );
+  const mutateArchivedTodos = useCallback(
+    async (updater: (items: Todo[]) => Todo[]) => {
+      const nextTodos = updater(todos);
+      await saveArchivedChanges(nextTodos);
+    },
+    [saveArchivedChanges, todos],
+  );
 
-    await saveArchivedChanges(nextTodos);
-  }, [saveArchivedChanges, todos]);
+  const restoreTodo = useCallback(async (id: string) => {
+    await mutateArchivedTodos(items =>
+      items.map(todo =>
+        todo.id === id
+          ? {
+              ...todo,
+              archivedAt: null,
+            }
+          : todo,
+      ),
+    );
+  }, [mutateArchivedTodos]);
 
   const confirmDelete = useCallback((id: string) => {
     setDeleteModal({ visible: true, id });
@@ -93,12 +101,11 @@ const ArchivedTasksScreen: React.FC<any> = ({ navigation }) => {
     }
 
     const id = deleteModal.id;
-    const nextTodos = todos.filter(todo => todo.id !== id);
 
     setDeleteModal({ visible: false });
     await cancelTodoReminder(id);
-    await saveArchivedChanges(nextTodos);
-  }, [deleteModal.id, saveArchivedChanges, todos]);
+    await mutateArchivedTodos(items => items.filter(todo => todo.id !== id));
+  }, [deleteModal.id, mutateArchivedTodos]);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>

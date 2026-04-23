@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -34,6 +34,7 @@ type ScreenParams = {
 const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
   const params = (route?.params || {}) as ScreenParams;
   const editingTodo = params.mode === 'edit' ? params.todo : undefined;
+  const editingTodoId = editingTodo?.id;
 
   const [input, setInput] = useState(editingTodo?.title || '');
   const [priority, setPriority] = useState<PriorityType>(editingTodo?.priority || DEFAULT_PRIORITY);
@@ -69,6 +70,25 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
   };
 
   const title = useMemo(() => (editingTodo ? 'Edit Task' : 'Add New Task'), [editingTodo]);
+
+  useEffect(() => {
+    setInput(editingTodo?.title || '');
+    setPriority(editingTodo?.priority || DEFAULT_PRIORITY);
+    setCategory(editingTodo?.category || DEFAULT_CATEGORY);
+    setRepeat(editingTodo?.repeat || DEFAULT_REPEAT);
+    setDueDate(editingTodo?.dueDate ? new Date(editingTodo.dueDate) : null);
+    setDueTime(editingTodo?.dueTime ? new Date(editingTodo.dueTime) : null);
+    setSelectedTags(editingTodo?.tags || []);
+    setNotes(editingTodo?.notes || '');
+    setShowNotesInput(Boolean(editingTodo?.notes));
+    setSubtasks(editingTodo?.subtasks || []);
+    setSubtaskInput('');
+    setTagInput('');
+    setShowDatePicker(false);
+    setShowTimePicker(false);
+    setShowTagModal(false);
+    setSelectedTagColor(TAG_COLORS[0]);
+  }, [editingTodoId]);
 
   const addTag = () => {
     const name = tagInput.trim();
@@ -116,9 +136,26 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
     setSubtasks(prev => prev.filter(subtask => subtask.id !== id));
   };
 
+  const buildTodoPayload = () => ({
+    title: input.trim(),
+    dueDate: dueDate ? dueDate.toISOString() : null,
+    dueTime: dueTime ? dueTime.toISOString() : null,
+    priority,
+    category,
+    repeat,
+    tags: selectedTags,
+    notes: notes.trim() || undefined,
+    subtasks,
+  });
+
   const saveTask = async () => {
     if (!input.trim()) {
       Alert.alert('Missing title', 'Task title required hai.');
+      return;
+    }
+
+    if (Boolean(dueDate) !== Boolean(dueTime)) {
+      Alert.alert('Incomplete reminder', 'Reminder ke liye date aur time dono select karo.');
       return;
     }
 
@@ -126,21 +163,14 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
     const normalizedTodos = Array.isArray(localTodos) ? localTodos : [];
 
     let nextTodos: Todo[];
+    const todoPayload = buildTodoPayload();
 
     if (editingTodo) {
       nextTodos = normalizedTodos.map(todo =>
         todo.id === editingTodo.id
           ? {
               ...todo,
-              title: input.trim(),
-              dueDate: dueDate ? dueDate.toISOString() : null,
-              dueTime: dueTime ? dueTime.toISOString() : null,
-              priority,
-              category,
-              repeat,
-              tags: selectedTags,
-              notes: notes.trim() || undefined,
-              subtasks,
+              ...todoPayload,
             }
           : todo,
       );
@@ -149,16 +179,9 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
         id: Date.now().toString(),
         title: input.trim(),
         completed: false,
-        dueDate: dueDate ? dueDate.toISOString() : null,
-        dueTime: dueTime ? dueTime.toISOString() : null,
+        ...todoPayload,
         status: 'pending',
         completedAt: null,
-        priority,
-        category,
-        repeat,
-        tags: selectedTags,
-        notes: notes.trim() || undefined,
-        subtasks,
       };
 
       nextTodos = [...normalizedTodos, newTodo];
@@ -166,6 +189,8 @@ const AddTaskScreen: React.FC<any> = ({ navigation, route }) => {
 
     await saveTodo(nextTodos);
     await syncTodoReminders(nextTodos);
+
+    navigation.setParams({ mode: 'create', todo: undefined });
 
     navigation.navigate('Home', { refreshAt: Date.now() });
   };

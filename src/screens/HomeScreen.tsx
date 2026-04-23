@@ -16,6 +16,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { Todo } from '../types/todo.types';
 import { loadTodos, saveTodo } from '../storage/todo.storage';
 import { cancelTodoReminder, syncTodoReminders } from '../utils/todoNotifications';
+import { matchesTodoSearch, normalizeSearchQuery } from '../utils/todoFilters';
 import notifee, { EventType } from '@notifee/react-native';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import { useAppTheme } from '../contexts/ThemeContext';
@@ -243,7 +244,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [newNotifCount, setNewNotifCount] = useState(0);
   const { isDark, colors, toggleTheme } = useAppTheme();
-  const normalizedSearchQuery = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
+  const normalizedSearchQuery = useMemo(() => normalizeSearchQuery(searchQuery), [searchQuery]);
 
   const animations = useRef<{ [key: string]: Animated.Value }>({}).current;
   const bellAnim = useRef(new Animated.Value(0)).current;
@@ -324,7 +325,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
   const filteredTodos = useMemo(
     () =>
       visibleTodos.filter(todo => {
-        const matchesSearch = todo.title.toLowerCase().includes(normalizedSearchQuery);
+        const matchesSearch = matchesTodoSearch(todo, normalizedSearchQuery);
 
         const currentStatus = getTodoStatus(todo);
         const matchesFilter =
